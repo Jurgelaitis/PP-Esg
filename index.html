@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PP-ESG | G-Procure</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;0,6..12,800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --color-emerald:#00A072;--color-emerald-50:#16C492;--color-emerald-120:#128A76;
+  --color-graphite:#2E3641;--color-graphite-50:#737483;--color-graphite-30:#C7CDD3;
+  --color-graphite-15:#E1E2E4;--color-graphite-5:#EFF1F1;
+  --color-blue:#00667D;--color-cyan:#00A5C4;--color-lime:#85BC28;--color-green:#459D54;--color-lemon:#BAF54D;
+  --color-green-15:#D7EEDB;--color-green-5:#EFF9F1;--color-cyan-5:#E8F7F9;
+  --color-white:#FFFFFF;--color-black:#000;--color-error:#DB354A;--color-warning:#FAB03B;
+  --font-base:"Nunito Sans",Arial,sans-serif;
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;
+  --space-1:8px;--space-2:16px;--space-3:24px;--space-4:32px;--space-5:48px;--space-6:64px;
+  --container-max:1280px;
+  --shadow-subtle:0 8px 24px rgba(46,54,65,.08);
+  --shadow-card:0 1px 2px rgba(46,54,65,.04);
+  --transition-fast:180ms ease;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font-base);color:var(--color-graphite);background:var(--color-graphite-5);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--color-emerald);text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:14px}
+
+/* ---------- Header ---------- */
+.app-header{background:linear-gradient(120deg,#0B3B33 0%,#0E5247 45%,#00667D 100%);color:#fff;position:sticky;top:0;z-index:40}
+.header-inner{max-width:var(--container-max);margin:0 auto;padding:var(--space-2) var(--space-3);display:flex;align-items:center;justify-content:space-between;gap:var(--space-2)}
+.brand{display:flex;align-items:center;gap:var(--space-2);min-width:0}
+.brand-logo{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand-logo svg{width:22px;height:22px}
+.brand-text{display:flex;flex-direction:column;min-width:0}
+.brand-group{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-emerald-50);font-weight:700}
+.brand-module{font-size:19px;font-weight:800;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:var(--space-2)}
+.sys-status{display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.85);background:rgba(255,255,255,.08);padding:6px 12px;border-radius:999px}
+.sys-dot{width:8px;height:8px;border-radius:50%;background:var(--color-emerald-50);box-shadow:0 0 0 3px rgba(22,196,146,.25);animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.lang-toggle{display:flex;background:rgba(255,255,255,.1);border-radius:999px;padding:3px}
+.lang-toggle button{color:rgba(255,255,255,.7);padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700;transition:var(--transition-fast)}
+.lang-toggle button.active{background:#fff;color:var(--color-graphite)}
+
+/* ---------- Tabs ---------- */
+.tabbar{background:#fff;border-bottom:1px solid var(--color-graphite-15);position:sticky;top:71px;z-index:30}
+.tabbar-inner{max-width:var(--container-max);margin:0 auto;padding:0 var(--space-3);display:flex;gap:4px;overflow-x:auto}
+.tab{display:flex;align-items:center;gap:8px;padding:14px 16px;font-size:14px;font-weight:700;color:var(--color-graphite-50);border-bottom:3px solid transparent;white-space:nowrap;transition:var(--transition-fast)}
+.tab svg{width:18px;height:18px}
+.tab:hover{color:var(--color-graphite)}
+.tab.active{color:var(--color-emerald);border-bottom-color:var(--color-emerald)}
+
+/* ---------- Layout ---------- */
+.container{max-width:var(--container-max);margin:0 auto;padding:var(--space-3)}
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-3);flex-wrap:wrap}
+.page-title{font-size:24px;font-weight:800}
+.page-sub{color:var(--color-graphite-50);font-size:14px;margin-top:4px;max-width:680px}
+
+/* ---------- Cards ---------- */
+.card{background:#fff;border:1px solid var(--color-graphite-15);border-radius:var(--radius-md);box-shadow:var(--shadow-card)}
+.card-pad{padding:var(--space-3)}
+.grid{display:grid;gap:var(--space-2)}
+.kpis{grid-template-columns:repeat(4,1fr);margin-bottom:var(--space-3)}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.kpis{grid-template-columns:1fr}}
+.kpi{background:#fff;border:1px solid var(--color-graphite-15);border-radius:var(--radius-md);padding:var(--space-3);position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--color-emerald)}
+.kpi.amber::before{background:var(--color-warning)}.kpi.red::before{background:var(--color-error)}.kpi.blue::before{background:var(--color-blue)}
+.kpi-label{font-size:13px;color:var(--color-graphite-50);font-weight:600;display:flex;align-items:center;gap:6px}
+.kpi-value{font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-.5px}
+.kpi-foot{font-size:12px;color:var(--color-graphite-50);margin-top:4px}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)}
+@media(max-width:860px){.two-col{grid-template-columns:1fr}}
+.card-title{font-size:16px;font-weight:800;margin-bottom:var(--space-2);display:flex;align-items:center;gap:8px}
+.card-title .hint{font-size:12px;font-weight:600;color:var(--color-graphite-50)}
+
+/* ---------- Toolbar / filters ---------- */
+.toolbar{display:flex;gap:var(--space-1);flex-wrap:wrap;align-items:center;margin-bottom:var(--space-2)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;font-weight:700;color:var(--color-graphite-50)}
+.input,.select,textarea.input{background:#fff;border:1px solid var(--color-graphite-30);border-radius:var(--radius-sm);padding:9px 12px;color:var(--color-graphite);min-width:140px;transition:var(--transition-fast)}
+.input:focus,.select:focus,textarea.input:focus{outline:none;border-color:var(--color-emerald);box-shadow:0 0 0 3px rgba(0,160,114,.15)}
+.search{flex:1;min-width:200px}
+.spacer{flex:1}
+
+/* ---------- Buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:var(--radius-sm);font-size:14px;font-weight:700;transition:var(--transition-fast);border:1px solid transparent}
+.btn svg{width:16px;height:16px}
+.btn-primary{background:var(--color-emerald);color:#fff}
+.btn-primary:hover{background:var(--color-emerald-120)}
+.btn-secondary{background:#fff;color:var(--color-graphite);border-color:var(--color-graphite-30)}
+.btn-secondary:hover{border-color:var(--color-graphite-50);background:var(--color-graphite-5)}
+.btn-ghost{color:var(--color-emerald);padding:8px 10px}
+.btn-ghost:hover{background:var(--color-green-5)}
+.btn-danger{background:var(--color-error);color:#fff}
+.btn-sm{padding:6px 10px;font-size:13px}
+
+/* ---------- Tables ---------- */
+.table-wrap{overflow-x:auto;border:1px solid var(--color-graphite-15);border-radius:var(--radius-md);background:#fff}
+table{width:100%;border-collapse:collapse;font-size:14px}
+thead th{background:var(--color-green-15);color:var(--color-graphite);font-weight:800;text-align:left;padding:12px 14px;white-space:nowrap;border-bottom:2px solid var(--color-emerald);font-size:13px}
+tbody td{padding:11px 14px;border-bottom:1px solid var(--color-graphite-15);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--color-green-5)}
+.t-name{font-weight:700}
+.t-sub{font-size:12px;color:var(--color-graphite-50)}
+.row-flag-red{background:rgba(219,53,74,.05)}
+.empty{padding:var(--space-5);text-align:center;color:var(--color-graphite-50)}
+.empty svg{width:42px;height:42px;opacity:.4;margin-bottom:var(--space-1)}
+
+/* ---------- Badges ---------- */
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.badge .d{width:7px;height:7px;border-radius:50%}
+.b-low{background:var(--color-green-5);color:var(--color-green)}.b-low .d{background:var(--color-green)}
+.b-med{background:#FEF4E6;color:#B9791C}.b-med .d{background:var(--color-warning)}
+.b-high{background:#FCE9EC;color:var(--color-error)}.b-high .d{background:var(--color-error)}
+.b-clean{background:var(--color-cyan-5);color:var(--color-blue)}.b-clean .d{background:var(--color-blue)}
+.b-review{background:#FEF4E6;color:#B9791C}.b-review .d{background:var(--color-warning)}
+.b-blocked{background:#FCE9EC;color:var(--color-error)}.b-blocked .d{background:var(--color-error)}
+.b-neutral{background:var(--color-graphite-5);color:var(--color-graphite-50)}.b-neutral .d{background:var(--color-graphite-50)}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;background:var(--color-graphite-5);color:var(--color-graphite-50);margin:1px}
+
+/* ---------- Modal ---------- */
+.overlay{position:fixed;inset:0;background:rgba(20,28,32,.45);backdrop-filter:blur(2px);display:none;align-items:flex-start;justify-content:center;z-index:60;padding:var(--space-3);overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius-lg);width:100%;max-width:640px;box-shadow:var(--shadow-subtle);animation:pop .2s ease;margin:auto}
+.modal.wide{max-width:820px}
+@keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:var(--space-3);border-bottom:1px solid var(--color-graphite-15)}
+.modal-title{font-size:18px;font-weight:800}
+.modal-body{padding:var(--space-3);max-height:70vh;overflow-y:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:var(--space-1);padding:var(--space-2) var(--space-3);border-top:1px solid var(--color-graphite-15);background:var(--color-graphite-5);border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+.x-btn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--color-graphite-50)}
+.x-btn:hover{background:var(--color-graphite-5);color:var(--color-graphite)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2)}
+@media(max-width:560px){.form-grid{grid-template-columns:1fr}}
+.form-grid .full{grid-column:1/-1}
+.form-grid .field{width:100%}
+.form-grid .input,.form-grid .select{width:100%;min-width:0}
+
+/* ---------- Risk calculator ---------- */
+.calc{background:var(--color-cyan-5);border:1px dashed var(--color-cyan);border-radius:var(--radius-md);padding:var(--space-2);margin-top:var(--space-1)}
+.calc-out{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2);flex-wrap:wrap}
+.score-ring{--p:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--ring) calc(var(--p)*1%),var(--color-graphite-15) 0);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.score-ring span{width:50px;height:50px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}
+
+/* ---------- Detail / drawer ---------- */
+.detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);margin-bottom:var(--space-3)}
+@media(max-width:640px){.detail-grid{grid-template-columns:1fr 1fr}}
+.detail-item{background:var(--color-graphite-5);border-radius:var(--radius-sm);padding:12px}
+.detail-item .l{font-size:11px;font-weight:700;color:var(--color-graphite-50);text-transform:uppercase;letter-spacing:.04em}
+.detail-item .v{font-size:15px;font-weight:700;margin-top:3px}
+
+/* ---------- AI panel ---------- */
+.ai-box{border:1px solid var(--color-graphite-15);border-radius:var(--radius-md);overflow:hidden;margin-top:var(--space-2)}
+.ai-head{background:linear-gradient(120deg,#0E5247,#00667D);color:#fff;padding:12px var(--space-2);display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.ai-body{padding:var(--space-2)}
+.ai-disclaimer{background:#FEF4E6;border:1px solid var(--color-warning);color:#8a5a12;border-radius:var(--radius-sm);padding:10px 12px;font-size:12.5px;display:flex;gap:8px;margin-bottom:var(--space-2)}
+.ai-disclaimer svg{width:18px;height:18px;flex-shrink:0}
+.ai-result h4{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--color-graphite-50);margin:var(--space-2) 0 4px}
+.ai-result ul{margin:0 0 0 18px}
+.ai-result li{margin:3px 0}
+.spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+.spinner.dark{border-color:var(--color-graphite-15);border-top-color:var(--color-emerald)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* immutable note */
+.immutable{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--color-graphite-50);background:var(--color-graphite-5);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:var(--space-2)}
+.immutable svg{width:15px;height:15px;color:var(--color-emerald)}
+
+/* progress bars */
+.prog{height:8px;border-radius:999px;background:var(--color-graphite-15);overflow:hidden}
+.prog > i{display:block;height:100%;border-radius:999px;background:var(--color-emerald)}
+.prog.amber > i{background:var(--color-warning)}
+
+/* ESRS pillars */
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-2);margin-bottom:var(--space-3)}
+@media(max-width:760px){.pillars{grid-template-columns:1fr}}
+.pillar{border-radius:var(--radius-md);padding:var(--space-2);color:#fff}
+.pillar.e{background:linear-gradient(135deg,#0E5247,#16A085)}
+.pillar.s{background:linear-gradient(135deg,#00667D,#00A5C4)}
+.pillar.g{background:linear-gradient(135deg,#5B6770,#2E3641)}
+.pillar .code{font-size:12px;font-weight:800;opacity:.85;letter-spacing:.08em}
+.pillar .name{font-size:15px;font-weight:800;margin:2px 0 10px}
+.pillar .pts{font-size:28px;font-weight:800}
+.pillar .cov{font-size:12px;opacity:.9;margin-top:2px}
+
+.chip-toggle{display:inline-flex;gap:4px;background:var(--color-graphite-5);border-radius:999px;padding:3px}
+.chip-toggle button{padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;color:var(--color-graphite-50)}
+.chip-toggle button.active{background:#fff;color:var(--color-emerald);box-shadow:var(--shadow-card)}
+
+.note{font-size:12px;color:var(--color-graphite-50)}
+.sme-flag{background:var(--color-cyan-5);color:var(--color-blue);border:1px solid var(--color-cyan);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+
+/* toast */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:90;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--color-graphite);color:#fff;padding:12px 16px;border-radius:var(--radius-sm);box-shadow:var(--shadow-subtle);font-size:14px;display:flex;align-items:center;gap:8px;animation:slideIn .25s ease}
+.toast.ok{background:var(--color-emerald-120)}.toast.err{background:var(--color-error)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+
+.footer{max-width:var(--container-max);margin:0 auto;padding:var(--space-3);color:var(--color-graphite-50);font-size:12.5px;text-align:center}
+.req{color:var(--color-error)}
+.help-row{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--color-graphite-50);margin-top:4px}
+.hidden{display:none!important}
+.chart-box{position:relative;height:240px}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#16C492" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.4 7.7 8 10 4.6-2.3 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-group">EPSO-G · G-Procure</span>
+        <span class="brand-module">PP-ESG</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="sys-status"><span class="sys-dot"></span><span data-i18n="sys.online">Sistema veikia</span></div>
+      <div class="lang-toggle">
+        <button data-lang="lt" class="active" onclick="setLang('lt')">LT</button>
+        <button data-lang="en" onclick="setLang('en')">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <div class="tabbar-inner" id="tabbar">
+    <button class="tab active" data-view="dashboard" onclick="setView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      <span data-i18n="tab.dashboard">Apžvalga</span>
+    </button>
+    <button class="tab" data-view="suppliers" onclick="setView('suppliers')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span data-i18n="tab.suppliers">Tiekėjų rizikos registras</span>
+    </button>
+    <button class="tab" data-view="sanctions" onclick="setView('sanctions')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2 3 7v6c0 5 3.8 8.4 9 10 5.2-1.6 9-5 9-10V7z"/><path d="M9 12h6M12 9v6"/></svg>
+      <span data-i18n="tab.sanctions">Sankcijų patikros istorija</span>
+    </button>
+    <button class="tab" data-view="esrs" onclick="setView('esrs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="m7 14 3-3 3 3 5-6"/></svg>
+      <span data-i18n="tab.esrs">ESRS duomenų centras</span>
+    </button>
+  </div>
+</nav>
+
+<main class="container">
+
+  <!-- ============ DASHBOARD ============ -->
+  <section class="view active" id="view-dashboard">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title" data-i18n="dash.title">ESG ir atitikties apžvalga</h1>
+        <p class="page-sub" data-i18n="dash.sub">Viena tiesos versija apie tiekėjų ESG riziką, sankcijų statusą ir CSRD duomenų parengtį. Visi kiti G-Procure moduliai naudoja šiuos duomenis per API.</p>
+      </div>
+    </div>
+    <div class="grid kpis" id="kpiRow"></div>
+    <div class="two-col" style="margin-bottom:var(--space-2)">
+      <div class="card card-pad">
+        <div class="card-title"><span data-i18n="dash.riskDist">Rizikos pasiskirstymas</span></div>
+        <div class="chart-box"><canvas id="chartRisk"></canvas></div>
+      </div>
+      <div class="card card-pad">
+        <div class="card-title"><span data-i18n="dash.sanctDist">Sankcijų statusas</span></div>
+        <div class="chart-box"><canvas id="chartSanct"></canvas></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card card-pad">
+        <div class="card-title"><span data-i18n="dash.byCountry">Rizika pagal šalį</span></div>
+        <div class="chart-box"><canvas id="chartCountry"></canvas></div>
+      </div>
+      <div class="card card-pad">
+        <div class="card-title"><span data-i18n="dash.recent">Naujausi sankcijų patikros įrašai</span></div>
+        <div id="recentChecks"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SUPPLIERS ============ -->
+  <section class="view" id="view-suppliers">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title" data-i18n="sup.title">Tiekėjų rizikos registras</h1>
+        <p class="page-sub" data-i18n="sup.sub">Viena tiesos versija: kiekvienas tiekėjas turi unikalų ID, kurį naudoja kiti moduliai (PP-TS, PP-PROTOCOLS, PP-NEGOTIATION).</p>
+      </div>
+      <button class="btn btn-primary" onclick="openSupplierModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span data-i18n="sup.add">Pridėti tiekėją</span>
+      </button>
+    </div>
+    <div class="toolbar">
+      <input class="input search" id="supSearch" oninput="renderSuppliers()" data-i18n-ph="sup.search" placeholder="Ieškoti pagal pavadinimą ar kodą…" />
+      <select class="select" id="fRisk" onchange="renderSuppliers()"><option value="" data-i18n="f.allRisk">Visos rizikos</option><option value="low" data-i18n="risk.low">Žema</option><option value="medium" data-i18n="risk.medium">Vidutinė</option><option value="high" data-i18n="risk.high">Aukšta</option></select>
+      <select class="select" id="fSanct" onchange="renderSuppliers()"><option value="" data-i18n="f.allSanct">Visi statusai</option><option value="clean" data-i18n="sanct.clean">Švarus</option><option value="review" data-i18n="sanct.review">Tikrinti</option><option value="blocked" data-i18n="sanct.blocked">Blokuotas</option></select>
+      <select class="select" id="fCountry" onchange="renderSuppliers()"></select>
+      <select class="select" id="fCat" onchange="renderSuppliers()"></select>
+      <button class="btn btn-secondary btn-sm" onclick="resetSupFilters()" data-i18n="f.reset">Išvalyti</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-i18n="th.supplier">Tiekėjas</th>
+          <th data-i18n="th.country">Šalis</th>
+          <th data-i18n="th.category">Kategorija</th>
+          <th data-i18n="th.risk">ESG rizika</th>
+          <th data-i18n="th.sanct">Sankcijų statusas</th>
+          <th data-i18n="th.lastCheck">Pask. patikra</th>
+          <th data-i18n="th.owner">Atsakingas</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="supBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ SANCTIONS ============ -->
+  <section class="view" id="view-sanctions">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title" data-i18n="sanc.title">Sankcijų patikros istorija</h1>
+        <p class="page-sub" data-i18n="sanc.sub">Audituojamas žurnalas. Įrašai nekeičiami ir netrinami — galima tik pridėti naują patikrą.</p>
+      </div>
+      <button class="btn btn-primary" onclick="openCheckModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span data-i18n="sanc.add">Registruoti patikrą</span>
+      </button>
+    </div>
+    <div class="immutable">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span data-i18n="sanc.immutable">Įrašai nekeičiami (write-once). Kiekviena patikra išsaugoma su laiko žyma ir atsakingu asmeniu auditui.</span>
+    </div>
+    <div class="toolbar">
+      <input class="input search" id="chkSearch" oninput="renderChecks()" data-i18n-ph="sanc.search" placeholder="Ieškoti pagal tiekėją ar tikrintoją…" />
+      <select class="select" id="fResult" onchange="renderChecks()"><option value="" data-i18n="f.allResults">Visi rezultatai</option><option value="clean" data-i18n="res.clean">Švarus</option><option value="match" data-i18n="res.match">Atitikmuo rastas</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-i18n="th.date">Data / laikas</th>
+          <th data-i18n="th.supplier">Tiekėjas</th>
+          <th data-i18n="th.checkedBy">Tikrino</th>
+          <th data-i18n="th.lists">Tikrinti sąrašai</th>
+          <th data-i18n="th.result">Rezultatas</th>
+          <th data-i18n="th.notes">Pastabos</th>
+        </tr></thead>
+        <tbody id="chkBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ ESRS ============ -->
+  <section class="view" id="view-esrs">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title" data-i18n="esrs.title">ESRS duomenų centras</h1>
+        <p class="page-sub" data-i18n="esrs.sub">Struktūrizuoti pirkimų ESRS duomenų taškai grupės CSRD ataskaitai: E1 (Scope 3), S2 (vertės grandinės darbuotojai), G1 (verslo etika).</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary" onclick="addEsrsPoint()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="esrs.addPoint">Pridėti duomenų tašką</span></button>
+        <button class="btn btn-primary" onclick="openExportModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span data-i18n="esrs.export">Eksportuoti CSRD ataskaitai</span></button>
+      </div>
+    </div>
+
+    <div class="grid kpis" id="esrsKpis"></div>
+    <div class="pillars" id="pillars"></div>
+
+    <div class="card card-pad" style="margin-bottom:var(--space-3)">
+      <div class="card-title"><span data-i18n="esrs.coverage">Tiekėjų ESG įsipareigojimų padengimas</span></div>
+      <div id="esrsBars"></div>
+    </div>
+
+    <div class="card-title" style="padding:0 4px"><span data-i18n="esrs.points">ESRS duomenų taškai</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th data-i18n="th.dpName">Duomenų taškas</th>
+          <th data-i18n="th.esrsCode">ESRS kodas</th>
+          <th data-i18n="th.value">Vertė</th>
+          <th data-i18n="th.unit">Vnt.</th>
+          <th data-i18n="th.source">Šaltinis</th>
+          <th data-i18n="th.dpDate">Data</th>
+          <th data-i18n="th.coverage">Padengimas</th>
+        </tr></thead>
+        <tbody id="esrsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <span data-i18n="foot.text">PP-ESG · centrinis ESG ir atitikties variklis · EPSO-G G-Procure ekosistema</span> ·
+  <span data-i18n="foot.legal">Reguliacinis pagrindas: CSRD / ESRS, CSDDD principai, ES sankcijų režimai · Utilities sektorius (PSĮ)</span>
+</footer>
+
+<!-- ============ MODALS ============ -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalShell"></div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+/* ============================================================
+   PP-ESG — Central ESG & Compliance Engine (G-Procure)
+   MVP frontend logic.
+   Architecture: UI layer  ->  Service layer (API-ready)  ->  Store (LocalStorage)
+   To migrate to backend DB: replace the bodies of the functions inside
+   the `Store` object with fetch() calls to api.g-procure.com. Nothing in
+   the UI references LocalStorage directly.
+   ============================================================ */
+
+/* ---- Backend proxy base (Claude API calls go through this, never direct) ---- */
+const API_BASE = "https://api.g-procure.com";
+
+/* ============================================================
+   1. DATA LAYER  (the only place that touches persistence)
+   ============================================================ */
+const Store = {
+  KEYS: { sup: "ppesg.suppliers", chk: "ppesg.checks", esrs: "ppesg.esrs", meta: "ppesg.meta" },
+  _read(k, fb) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } },
+  _write(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
+
+  getSuppliers() { return this._read(this.KEYS.sup, []); },
+  saveSupplier(s) {
+    const all = this.getSuppliers();
+    if (s.id) { const i = all.findIndex(x => x.id === s.id); if (i > -1) all[i] = s; }
+    else { s.id = this.newId("SUP"); s.createdAt = new Date().toISOString(); all.push(s); }
+    this._write(this.KEYS.sup, all); return s;
+  },
+  getSupplier(id) { return this.getSuppliers().find(s => s.id === id); },
+
+  getChecks() { return this._read(this.KEYS.chk, []); },
+  addCheck(c) { // write-once: append only, never edit/delete
+    const all = this.getChecks();
+    c.id = this.newId("CHK"); c.timestamp = new Date().toISOString();
+    all.push(c); this._write(this.KEYS.chk, all);
+    // escalation rule: match found -> supplier becomes "blocked"
+    if (c.result === "match") {
+      const s = this.getSupplier(c.supplierId);
+      if (s) { s.sanctions = "blocked"; this.saveSupplier(s); }
+    } else {
+      const s = this.getSupplier(c.supplierId);
+      if (s && s.sanctions !== "blocked") { s.sanctions = "clean"; s.lastCheck = c.timestamp; this.saveSupplier(s); }
+    }
+    if (c.result !== "match") { const s = this.getSupplier(c.supplierId); if (s) { s.lastCheck = c.timestamp; this.saveSupplier(s); } }
+    return c;
+  },
+  getChecksFor(supplierId) { return this.getChecks().filter(c => c.supplierId === supplierId).sort((a, b) => b.timestamp.localeCompare(a.timestamp)); },
+
+  getEsrs() { return this._read(this.KEYS.esrs, []); },
+  saveEsrs(p) {
+    const all = this.getEsrs();
+    if (p.id) { const i = all.findIndex(x => x.id === p.id); if (i > -1) all[i] = p; }
+    else { p.id = this.newId("DP"); all.push(p); }
+    this._write(this.KEYS.esrs, all); return p;
+  },
+
+  newId(prefix) { return prefix + "-" + Date.now().toString(36).toUpperCase() + "-" + Math.random().toString(36).slice(2, 5).toUpperCase(); },
+  seedIfEmpty() {
+    if (this.getSuppliers().length || this._read(this.KEYS.meta, null)) return;
+    this._write(this.KEYS.sup, SEED.suppliers);
+    this._write(this.KEYS.chk, SEED.checks);
+    this._write(this.KEYS.esrs, SEED.esrs);
+    this._write(this.KEYS.meta, { seeded: true, at: new Date().toISOString() });
+  }
+};
+
+/* ============================================================
+   RISK ENGINE  (risk-based logic per CSDDD good practice)
+   Inputs: country risk, sector risk, network criticality -> overall level
+   ============================================================ */
+const COUNTRY_RISK = { // illustrative; replace with official indices later
+  "Lietuva": 1, "Latvija": 1, "Estija": 1, "Lenkija": 1, "Vokietija": 1, "Švedija": 1, "Suomija": 1,
+  "Prancūzija": 1, "Italija": 2, "Ispanija": 1, "JAV": 1, "Kinija": 3, "Indija": 3, "Turkija": 2,
+  "JAE": 2, "Kita ES": 1, "Kita ne-ES": 2
+};
+function computeRisk({ country, sector, criticality }) {
+  const c = COUNTRY_RISK[country] ?? 2;        // 1..3
+  const s = Number(sector) || 1;               // 1..3
+  const k = Number(criticality) || 1;          // 1..3
+  // weighted: criticality to the grid weighs most for a TSO
+  const score = Math.round(((c * 0.3) + (s * 0.3) + (k * 0.4)) / 3 * 100); // 0..100
+  let level = "low";
+  if (score >= 67) level = "high"; else if (score >= 40) level = "medium";
+  return { score, level, parts: { c, s, k } };
+}
+
+/* ============================================================
+   2. I18N
+   ============================================================ */
+let LANG = localStorage.getItem("ppesg.lang") || "lt";
+const I18N = {
+  lt: {
+    "sys.online": "Sistema veikia",
+    "tab.dashboard": "Apžvalga", "tab.suppliers": "Tiekėjų rizikos registras", "tab.sanctions": "Sankcijų patikros istorija", "tab.esrs": "ESRS duomenų centras",
+    "dash.title": "ESG ir atitikties apžvalga",
+    "dash.sub": "Viena tiesos versija apie tiekėjų ESG riziką, sankcijų statusą ir CSRD duomenų parengtį. Kiti G-Procure moduliai naudoja šiuos duomenis per API.",
+    "dash.riskDist": "Rizikos pasiskirstymas", "dash.sanctDist": "Sankcijų statusas", "dash.byCountry": "Rizika pagal šalį", "dash.recent": "Naujausi sankcijų patikros įrašai",
+    "kpi.suppliers": "Tiekėjai registre", "kpi.highRisk": "Aukštos rizikos", "kpi.blocked": "Blokuoti tiekėjai", "kpi.coverage": "ESRS padengimas",
+    "kpi.foot.checked": "patikrinta per 90 d.", "kpi.foot.ofTotal": "nuo viso skaičiaus", "kpi.foot.escalated": "eskaluota patikrose", "kpi.foot.points": "duomenų taškų",
+    "sup.title": "Tiekėjų rizikos registras",
+    "sup.sub": "Viena tiesos versija: kiekvienas tiekėjas turi unikalų ID, kurį naudoja kiti moduliai (PP-TS, PP-PROTOCOLS, PP-NEGOTIATION).",
+    "sup.add": "Pridėti tiekėją", "sup.search": "Ieškoti pagal pavadinimą ar kodą…",
+    "f.allRisk": "Visos rizikos", "f.allSanct": "Visi statusai", "f.allCountry": "Visos šalys", "f.allCat": "Visos kategorijos", "f.reset": "Išvalyti", "f.allResults": "Visi rezultatai",
+    "risk.low": "Žema", "risk.medium": "Vidutinė", "risk.high": "Aukšta",
+    "sanct.clean": "Švarus", "sanct.review": "Tikrinti", "sanct.blocked": "Blokuotas",
+    "th.supplier": "Tiekėjas", "th.country": "Šalis", "th.category": "Kategorija", "th.risk": "ESG rizika", "th.sanct": "Sankcijų statusas", "th.lastCheck": "Pask. patikra", "th.owner": "Atsakingas",
+    "th.date": "Data / laikas", "th.checkedBy": "Tikrino", "th.lists": "Tikrinti sąrašai", "th.result": "Rezultatas", "th.notes": "Pastabos",
+    "th.dpName": "Duomenų taškas", "th.esrsCode": "ESRS kodas", "th.value": "Vertė", "th.unit": "Vnt.", "th.source": "Šaltinis", "th.dpDate": "Data", "th.coverage": "Padengimas",
+    "sanc.title": "Sankcijų patikros istorija",
+    "sanc.sub": "Audituojamas žurnalas. Įrašai nekeičiami ir netrinami — galima tik pridėti naują patikrą.",
+    "sanc.add": "Registruoti patikrą", "sanc.search": "Ieškoti pagal tiekėją ar tikrintoją…",
+    "sanc.immutable": "Įrašai nekeičiami (write-once). Kiekviena patikra išsaugoma su laiko žyma ir atsakingu asmeniu auditui.",
+    "res.clean": "Švarus", "res.match": "Atitikmuo rastas",
+    "esrs.title": "ESRS duomenų centras",
+    "esrs.sub": "Struktūrizuoti pirkimų ESRS duomenų taškai grupės CSRD ataskaitai: E1 (Scope 3), S2 (vertės grandinės darbuotojai), G1 (verslo etika).",
+    "esrs.addPoint": "Pridėti duomenų tašką", "esrs.export": "Eksportuoti CSRD ataskaitai", "esrs.coverage": "Tiekėjų ESG įsipareigojimų padengimas", "esrs.points": "ESRS duomenų taškai",
+    "esrs.kpi.total": "Bendras ESRS padengimas", "esrs.kpi.code": "Elgesio kodeksas pasirašytas", "esrs.kpi.crit": "Pirkimai su tvarumo kriterijais", "esrs.kpi.sme": "MVĮ (VSME apimtis)",
+    "esrs.kpi.foot.value": "pagal vertę", "esrs.kpi.foot.suppliers": "tiekėjų dalis", "esrs.kpi.foot.cap": "Omnibus value-chain cap",
+    "foot.text": "PP-ESG · centrinis ESG ir atitikties variklis · EPSO-G G-Procure ekosistema",
+    "foot.legal": "Reguliacinis pagrindas: CSRD / ESRS, CSDDD principai, ES sankcijų režimai · Utilities sektorius (PSĮ)",
+    // modal supplier
+    "m.sup.add": "Pridėti tiekėją", "m.sup.edit": "Redaguoti tiekėją", "m.sup.name": "Pavadinimas", "m.sup.code": "Įmonės kodas", "m.sup.country": "Šalis", "m.sup.cat": "Kategorija", "m.sup.owner": "Atsakingas asmuo",
+    "m.sup.calc": "Rizikos skaičiuoklė (rizika grįsta logika)", "m.sup.sector": "Sektoriaus rizika", "m.sup.crit": "Kritiškumas tinklui",
+    "m.sup.low": "Žema", "m.sup.med": "Vidutinė", "m.sup.high": "Aukšta", "m.sup.calcHint": "Įvertis apskaičiuojamas iš šalies, sektoriaus ir kritiškumo tinklui. Galite jį perrašyti rankiniu būdu.",
+    "m.sup.override": "Galutinis rizikos lygis", "m.sup.sme": "Tai MVĮ (mažoji/vidutinė įmonė)", "m.sup.smeHint": "Pažymėjus, iš tiekėjo prašoma tik VSME apimties ESG duomenų (proporcingumas).",
+    "m.cancel": "Atšaukti", "m.save": "Išsaugoti", "m.computed": "Apskaičiuota",
+    // modal check
+    "m.chk.title": "Registruoti sankcijų patikrą", "m.chk.supplier": "Tiekėjas", "m.chk.by": "Tikrino (vartotojas)", "m.chk.lists": "Tikrinti sąrašai", "m.chk.result": "Rezultatas", "m.chk.notes": "Pastabos",
+    "m.chk.warnMatch": "Dėmesio: pažymėjus „Atitikmuo rastas“, tiekėjo statusas registre automatiškai taps „Blokuotas“ ir įrašas bus pažymėtas raudonai.",
+    "m.chk.save": "Išsaugoti patikrą (negrįžtama)",
+    "m.ai.btn": "Įvertinti sankcijų riziką (AI)", "m.ai.head": "AI preliminarus sankcijų rizikos vertinimas",
+    "m.ai.disc": "AI teikia tik PRELIMINARŲ vertinimą orientavimuisi. Galutinį sprendimą priima atsakingas asmuo, remdamasis oficialiais ES, OFAC, JT ir nacionaliniais sankcijų sąrašais. AI nepateikia galutinio „švarus/blokuotas“ verdikto.",
+    "m.ai.level": "Preliminarus rizikos lygis", "m.ai.factors": "Rizikos veiksniai", "m.ai.actions": "Rekomenduojami tolesni veiksmai", "m.ai.thinking": "Vertinama…", "m.ai.context": "Tiekėjo kontekstas vertinimui (šalis, savininkai, veiklos sritis)",
+    "m.ai.fail": "Nepavyko pasiekti AI vertinimo paslaugos. Patikrinkite, ar veikia backend proxy (/api/esg/sanctions-assessment).",
+    // export
+    "m.exp.title": "Eksportuoti CSRD ataskaitai", "m.exp.desc": "Sugeneruojamas struktūrizuotas duomenų paketas su visais ESRS taškais, padengimo rodikliais ir metaduomenimis grupės CSRD ataskaitai.", "m.exp.json": "Atsisiųsti JSON", "m.exp.csv": "Atsisiųsti CSV", "m.exp.preview": "Peržiūra",
+    // misc
+    "act.view": "Peržiūrėti", "act.edit": "Redaguoti", "act.check": "Patikra", "none": "—", "never": "Niekada netikrinta",
+    "drawer.title": "Tiekėjo kortelė", "drawer.id": "Unikalus ID", "drawer.history": "Sankcijų patikros istorija", "drawer.noHistory": "Patikrų dar nėra.", "drawer.addCheck": "Registruoti patikrą",
+    "drawer.riskScore": "Rizikos įvertis", "drawer.api": "API prieiga kitiems moduliams",
+    "toast.saved": "Išsaugota", "toast.checkSaved": "Patikra užregistruota", "toast.blocked": "Tiekėjas pažymėtas kaip BLOKUOTAS (eskalacija)", "toast.exported": "Failas atsisiųstas", "toast.seeded": "Įkelti demonstraciniai duomenys",
+    "sme": "MVĮ · VSME", "source.module": "Modulis", "source.manual": "Rankinis",
+    "esrs.bar.code": "Pasirašytas tiekėjų elgesio kodeksas", "esrs.bar.data": "Pateikė ESG duomenis", "esrs.bar.crit": "Pirkimai su tvarumo kriterijais (pagal vertę)",
+    "req": "privaloma"
+  },
+  en: {
+    "sys.online": "System online",
+    "tab.dashboard": "Overview", "tab.suppliers": "Supplier Risk Register", "tab.sanctions": "Sanctions Check History", "tab.esrs": "ESRS Data Hub",
+    "dash.title": "ESG & Compliance Overview",
+    "dash.sub": "A single source of truth on supplier ESG risk, sanctions status and CSRD data readiness. Other G-Procure modules consume this data via API.",
+    "dash.riskDist": "Risk distribution", "dash.sanctDist": "Sanctions status", "dash.byCountry": "Risk by country", "dash.recent": "Latest sanctions checks",
+    "kpi.suppliers": "Suppliers in register", "kpi.highRisk": "High risk", "kpi.blocked": "Blocked suppliers", "kpi.coverage": "ESRS coverage",
+    "kpi.foot.checked": "checked in 90 days", "kpi.foot.ofTotal": "of total", "kpi.foot.escalated": "escalated in checks", "kpi.foot.points": "data points",
+    "sup.title": "Supplier Risk Register",
+    "sup.sub": "Single source of truth: every supplier has a unique ID consumed by other modules (PP-TS, PP-PROTOCOLS, PP-NEGOTIATION).",
+    "sup.add": "Add supplier", "sup.search": "Search by name or company code…",
+    "f.allRisk": "All risk levels", "f.allSanct": "All statuses", "f.allCountry": "All countries", "f.allCat": "All categories", "f.reset": "Reset", "f.allResults": "All results",
+    "risk.low": "Low", "risk.medium": "Medium", "risk.high": "High",
+    "sanct.clean": "Clean", "sanct.review": "Review", "sanct.blocked": "Blocked",
+    "th.supplier": "Supplier", "th.country": "Country", "th.category": "Category", "th.risk": "ESG risk", "th.sanct": "Sanctions status", "th.lastCheck": "Last check", "th.owner": "Owner",
+    "th.date": "Date / time", "th.checkedBy": "Checked by", "th.lists": "Lists checked", "th.result": "Result", "th.notes": "Notes",
+    "th.dpName": "Data point", "th.esrsCode": "ESRS code", "th.value": "Value", "th.unit": "Unit", "th.source": "Source", "th.dpDate": "Date", "th.coverage": "Coverage",
+    "sanc.title": "Sanctions Check History",
+    "sanc.sub": "Auditable log. Records are immutable and cannot be deleted — you may only add a new check.",
+    "sanc.add": "Log a check", "sanc.search": "Search by supplier or checker…",
+    "sanc.immutable": "Records are write-once. Every check is stored with a timestamp and responsible person for audit.",
+    "res.clean": "Clean", "res.match": "Match found",
+    "esrs.title": "ESRS Data Hub",
+    "esrs.sub": "Structured procurement ESRS data points for the group CSRD report: E1 (Scope 3), S2 (value-chain workers), G1 (business conduct).",
+    "esrs.addPoint": "Add data point", "esrs.export": "Export for CSRD report", "esrs.coverage": "Supplier ESG commitment coverage", "esrs.points": "ESRS data points",
+    "esrs.kpi.total": "Overall ESRS coverage", "esrs.kpi.code": "Code of conduct signed", "esrs.kpi.crit": "Procurement with sustainability criteria", "esrs.kpi.sme": "SMEs (VSME scope)",
+    "esrs.kpi.foot.value": "by value", "esrs.kpi.foot.suppliers": "share of suppliers", "esrs.kpi.foot.cap": "Omnibus value-chain cap",
+    "foot.text": "PP-ESG · central ESG & compliance engine · EPSO-G G-Procure ecosystem",
+    "foot.legal": "Regulatory basis: CSRD / ESRS, CSDDD principles, EU sanctions regimes · Utilities sector (PSĮ)",
+    "m.sup.add": "Add supplier", "m.sup.edit": "Edit supplier", "m.sup.name": "Name", "m.sup.code": "Company code", "m.sup.country": "Country", "m.sup.cat": "Category", "m.sup.owner": "Responsible person",
+    "m.sup.calc": "Risk calculator (risk-based logic)", "m.sup.sector": "Sector risk", "m.sup.crit": "Criticality to the grid",
+    "m.sup.low": "Low", "m.sup.med": "Medium", "m.sup.high": "High", "m.sup.calcHint": "The score is computed from country, sector and grid criticality. You can override it manually.",
+    "m.sup.override": "Final risk level", "m.sup.sme": "This is an SME (small/medium enterprise)", "m.sup.smeHint": "If ticked, only VSME-scope ESG data is requested from this supplier (proportionality).",
+    "m.cancel": "Cancel", "m.save": "Save", "m.computed": "Computed",
+    "m.chk.title": "Log a sanctions check", "m.chk.supplier": "Supplier", "m.chk.by": "Checked by (user)", "m.chk.lists": "Lists checked", "m.chk.result": "Result", "m.chk.notes": "Notes",
+    "m.chk.warnMatch": "Note: selecting “Match found” will automatically set the supplier status to “Blocked” and flag the record in red.",
+    "m.chk.save": "Save check (irreversible)",
+    "m.ai.btn": "Assess sanctions risk (AI)", "m.ai.head": "AI preliminary sanctions risk assessment",
+    "m.ai.disc": "AI provides a PRELIMINARY assessment for orientation only. The final decision is made by the responsible person based on official EU, OFAC, UN and national sanctions lists. AI never issues a final “clean/blocked” verdict.",
+    "m.ai.level": "Preliminary risk level", "m.ai.factors": "Risk factors", "m.ai.actions": "Recommended next steps", "m.ai.thinking": "Assessing…", "m.ai.context": "Supplier context for the assessment (country, owners, activity)",
+    "m.ai.fail": "Could not reach the AI assessment service. Check that the backend proxy is running (/api/esg/sanctions-assessment).",
+    "m.exp.title": "Export for CSRD report", "m.exp.desc": "Generates a structured data package with all ESRS points, coverage metrics and metadata for the group CSRD report.", "m.exp.json": "Download JSON", "m.exp.csv": "Download CSV", "m.exp.preview": "Preview",
+    "act.view": "View", "act.edit": "Edit", "act.check": "Check", "none": "—", "never": "Never checked",
+    "drawer.title": "Supplier card", "drawer.id": "Unique ID", "drawer.history": "Sanctions check history", "drawer.noHistory": "No checks yet.", "drawer.addCheck": "Log a check",
+    "drawer.riskScore": "Risk score", "drawer.api": "API access for other modules",
+    "toast.saved": "Saved", "toast.checkSaved": "Check recorded", "toast.blocked": "Supplier marked as BLOCKED (escalation)", "toast.exported": "File downloaded", "toast.seeded": "Demo data loaded",
+    "sme": "SME · VSME", "source.module": "Module", "source.manual": "Manual",
+    "esrs.bar.code": "Suppliers with signed code of conduct", "esrs.bar.data": "Suppliers that submitted ESG data", "esrs.bar.crit": "Procurement with sustainability criteria (by value)",
+    "req": "required"
+  }
+};
+function t(key) { return (I18N[LANG] && I18N[LANG][key]) || (I18N.lt[key]) || key; }
+function applyI18n() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  document.querySelectorAll(".lang-toggle button").forEach(b => b.classList.toggle("active", b.dataset.lang === LANG));
+}
+function setLang(l) { LANG = l; localStorage.setItem("ppesg.lang", l); applyI18n(); renderAll(); }
+
+/* ============================================================
+   3. UI HELPERS
+   ============================================================ */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+const fmtDate = (iso) => iso ? new Date(iso).toLocaleDateString(LANG === "lt" ? "lt-LT" : "en-GB") : t("never");
+const fmtDateTime = (iso) => iso ? new Date(iso).toLocaleString(LANG === "lt" ? "lt-LT" : "en-GB", { dateStyle: "short", timeStyle: "short" }) : "";
+const RISK_BADGE = { low: "b-low", medium: "b-med", high: "b-high" };
+const RISK_LABEL = { low: "risk.low", medium: "risk.medium", high: "risk.high" };
+const SANCT_BADGE = { clean: "b-clean", review: "b-review", blocked: "b-blocked" };
+const SANCT_LABEL = { clean: "sanct.clean", review: "sanct.review", blocked: "sanct.blocked" };
+function riskBadge(l) { return `<span class="badge ${RISK_BADGE[l] || "b-neutral"}"><span class="d"></span>${t(RISK_LABEL[l] || "none")}</span>`; }
+function sanctBadge(l) { return `<span class="badge ${SANCT_BADGE[l] || "b-neutral"}"><span class="d"></span>${t(SANCT_LABEL[l] || "none")}</span>`; }
+function toast(msg, type = "ok") {
+  const el = document.createElement("div"); el.className = "toast " + type; el.textContent = msg;
+  $("#toasts").appendChild(el); setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity .3s"; setTimeout(() => el.remove(), 300); }, 3200);
+}
+function closeModal() { $("#overlay").classList.remove("open"); $("#modalShell").innerHTML = ""; }
+function openModal(html, wide) { const sh = $("#modalShell"); sh.className = "modal" + (wide ? " wide" : ""); sh.innerHTML = html; $("#overlay").classList.add("open"); }
+
+/* ============================================================
+   4. NAVIGATION
+   ============================================================ */
+function setView(v) {
+  document.querySelectorAll(".view").forEach(s => s.classList.remove("active"));
+  $("#view-" + v).classList.add("active");
+  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.view === v));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (v === "dashboard") renderDashboard();
+}
+
+/* ============================================================
+   5. SUPPLIERS VIEW
+   ============================================================ */
+function populateFilterDropdowns() {
+  const sup = Store.getSuppliers();
+  const countries = [...new Set(sup.map(s => s.country))].sort();
+  const cats = [...new Set(sup.map(s => s.category))].sort();
+  const fc = $("#fCountry"), fk = $("#fCat");
+  const cv = fc.value, kv = fk.value;
+  fc.innerHTML = `<option value="">${t("f.allCountry")}</option>` + countries.map(c => `<option ${c === cv ? "selected" : ""}>${esc(c)}</option>`).join("");
+  fk.innerHTML = `<option value="">${t("f.allCat")}</option>` + cats.map(c => `<option ${c === kv ? "selected" : ""}>${esc(c)}</option>`).join("");
+}
+function resetSupFilters() { $("#supSearch").value = ""; $("#fRisk").value = ""; $("#fSanct").value = ""; $("#fCountry").value = ""; $("#fCat").value = ""; renderSuppliers(); }
+function renderSuppliers() {
+  populateFilterDropdowns();
+  const q = $("#supSearch").value.toLowerCase().trim();
+  const fr = $("#fRisk").value, fs = $("#fSanct").value, fco = $("#fCountry").value, fca = $("#fCat").value;
+  let list = Store.getSuppliers();
+  list = list.filter(s =>
+    (!q || s.name.toLowerCase().includes(q) || (s.code || "").toLowerCase().includes(q)) &&
+    (!fr || s.risk === fr) && (!fs || s.sanctions === fs) && (!fco || s.country === fco) && (!fca || s.category === fca));
+  list.sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.risk] - { high: 0, medium: 1, low: 2 }[b.risk]) || a.name.localeCompare(b.name));
+  const body = $("#supBody");
+  if (!list.length) { body.innerHTML = `<tr><td colspan="8" class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><div>${LANG === "lt" ? "Tiekėjų nerasta" : "No suppliers found"}</div></td></tr>`; return; }
+  body.innerHTML = list.map(s => `
+    <tr class="${s.sanctions === "blocked" ? "row-flag-red" : ""}">
+      <td><div class="t-name">${esc(s.name)} ${s.sme ? `<span class="sme-flag">${t("sme")}</span>` : ""}</div><div class="t-sub">${esc(s.code || "")} · <span style="font-family:monospace">${esc(s.id)}</span></div></td>
+      <td>${esc(s.country)}</td>
+      <td>${esc(s.category)}</td>
+      <td>${riskBadge(s.risk)}</td>
+      <td>${sanctBadge(s.sanctions)}</td>
+      <td>${fmtDate(s.lastCheck)}</td>
+      <td>${esc(s.owner || t("none"))}</td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="openSupplierDrawer('${s.id}')" title="${t("act.view")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button class="btn btn-ghost btn-sm" onclick="openSupplierModal('${s.id}')" title="${t("act.edit")}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/></svg></button>
+      </td>
+    </tr>`).join("");
+}
+
+/* ---- Supplier add/edit modal ---- */
+const CATEGORIES = ["Aukštos įtampos įranga", "Kabeliai ir laidai", "Transformatoriai", "IT ir telekomunikacijos", "Statybos rangovai", "Konsultacijos", "Eksploatacija ir priežiūra", "Kita"];
+const COUNTRIES = Object.keys(COUNTRY_RISK);
+function openSupplierModal(id) {
+  const s = id ? Store.getSupplier(id) : { risk: "low", sanctions: "clean", sectorRisk: 1, criticality: 1 };
+  const opt = (arr, val) => arr.map(x => `<option ${x === val ? "selected" : ""}>${esc(x)}</option>`).join("");
+  const lvlOpt = (v) => `<option value="1" ${v == 1 ? "selected" : ""}>${t("m.sup.low")}</option><option value="2" ${v == 2 ? "selected" : ""}>${t("m.sup.med")}</option><option value="3" ${v == 3 ? "selected" : ""}>${t("m.sup.high")}</option>`;
+  openModal(`
+    <div class="modal-head"><div class="modal-title">${t(id ? "m.sup.edit" : "m.sup.add")}</div><button class="x-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="sf-id" value="${esc(s.id || "")}">
+      <div class="form-grid">
+        <div class="field full"><label>${t("m.sup.name")} <span class="req">*</span></label><input class="input" id="sf-name" value="${esc(s.name || "")}"></div>
+        <div class="field"><label>${t("m.sup.code")}</label><input class="input" id="sf-code" value="${esc(s.code || "")}"></div>
+        <div class="field"><label>${t("m.sup.owner")}</label><input class="input" id="sf-owner" value="${esc(s.owner || "")}"></div>
+        <div class="field"><label>${t("m.sup.country")}</label><select class="select" id="sf-country" onchange="recalc()">${opt(COUNTRIES, s.country)}</select></div>
+        <div class="field"><label>${t("m.sup.cat")}</label><select class="select" id="sf-cat">${opt(CATEGORIES, s.category)}</select></div>
+      </div>
+      <div class="calc">
+        <div class="card-title" style="font-size:14px;margin-bottom:8px">${t("m.sup.calc")}</div>
+        <div class="form-grid">
+          <div class="field"><label>${t("m.sup.sector")}</label><select class="select" id="sf-sector" onchange="recalc()">${lvlOpt(s.sectorRisk || 1)}</select></div>
+          <div class="field"><label>${t("m.sup.crit")}</label><select class="select" id="sf-crit" onchange="recalc()">${lvlOpt(s.criticality || 1)}</select></div>
+        </div>
+        <div class="calc-out">
+          <div class="score-ring" id="ring" style="--p:0;--ring:var(--color-emerald)"><span id="ringTxt">0</span></div>
+          <div>
+            <div class="note">${t("m.computed")}: <strong id="calcLabel">—</strong></div>
+            <div class="field" style="margin-top:6px"><label>${t("m.sup.override")}</label>
+              <select class="select" id="sf-risk"><option value="low">${t("risk.low")}</option><option value="medium">${t("risk.medium")}</option><option value="high">${t("risk.high")}</option></select></div>
+          </div>
+        </div>
+        <div class="help-row">${t("m.sup.calcHint")}</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;font-weight:600"><input type="checkbox" id="sf-sme" ${s.sme ? "checked" : ""}> ${t("m.sup.sme")}</label>
+      <div class="help-row">${t("m.sup.smeHint")}</div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" onclick="closeModal()">${t("m.cancel")}</button><button class="btn btn-primary" onclick="saveSupplierForm()">${t("m.save")}</button></div>
+  `);
+  // set computed + current override
+  recalc(); if (s.risk) $("#sf-risk").value = s.risk;
+}
+function recalc() {
+  const r = computeRisk({ country: $("#sf-country").value, sector: $("#sf-sector").value, criticality: $("#sf-crit").value });
+  const ring = $("#ring"), ringColor = r.level === "high" ? "var(--color-error)" : r.level === "medium" ? "var(--color-warning)" : "var(--color-emerald)";
+  ring.style.setProperty("--p", r.score); ring.style.setProperty("--ring", ringColor);
+  $("#ringTxt").textContent = r.score;
+  $("#calcLabel").textContent = t(RISK_LABEL[r.level]);
+  $("#sf-risk").value = r.level; // suggestion; user may override
+}
+function saveSupplierForm() {
+  const name = $("#sf-name").value.trim(); if (!name) { toast(LANG === "lt" ? "Įveskite pavadinimą" : "Enter a name", "err"); return; }
+  const id = $("#sf-id").value;
+  const prev = id ? Store.getSupplier(id) : {};
+  const r = computeRisk({ country: $("#sf-country").value, sector: $("#sf-sector").value, criticality: $("#sf-crit").value });
+  const s = {
+    ...prev, id: id || undefined, name, code: $("#sf-code").value.trim(), owner: $("#sf-owner").value.trim(),
+    country: $("#sf-country").value, category: $("#sf-cat").value,
+    sectorRisk: Number($("#sf-sector").value), criticality: Number($("#sf-crit").value),
+    riskScore: r.score, risk: $("#sf-risk").value, sme: $("#sf-sme").checked,
+    sanctions: prev.sanctions || "clean", lastCheck: prev.lastCheck || null
+  };
+  Store.saveSupplier(s); closeModal(); renderAll(); toast(t("toast.saved"));
+}
+
+/* ---- Supplier detail drawer ---- */
+function openSupplierDrawer(id) {
+  const s = Store.getSupplier(id); if (!s) return;
+  const checks = Store.getChecksFor(id);
+  const hist = checks.length ? checks.map(c => `
+    <tr class="${c.result === "match" ? "row-flag-red" : ""}">
+      <td>${fmtDateTime(c.timestamp)}</td><td>${esc(c.checkedBy)}</td>
+      <td>${(c.lists || []).map(l => `<span class="tag">${esc(l)}</span>`).join("")}</td>
+      <td>${c.result === "match" ? `<span class="badge b-blocked"><span class="d"></span>${t("res.match")}</span>` : `<span class="badge b-clean"><span class="d"></span>${t("res.clean")}</span>`}</td>
+      <td class="t-sub">${esc(c.notes || "")}</td>
+    </tr>`).join("") : `<tr><td colspan="5" class="empty">${t("drawer.noHistory")}</td></tr>`;
+  openModal(`
+    <div class="modal-head"><div><div class="t-sub">${t("drawer.title")}</div><div class="modal-title">${esc(s.name)} ${s.sme ? `<span class="sme-flag">${t("sme")}</span>` : ""}</div></div><button class="x-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="detail-grid">
+        <div class="detail-item"><div class="l">${t("drawer.id")}</div><div class="v" style="font-family:monospace;font-size:13px">${esc(s.id)}</div></div>
+        <div class="detail-item"><div class="l">${t("th.country")}</div><div class="v">${esc(s.country)}</div></div>
+        <div class="detail-item"><div class="l">${t("th.category")}</div><div class="v" style="font-size:13px">${esc(s.category)}</div></div>
+        <div class="detail-item"><div class="l">${t("th.risk")}</div><div class="v">${riskBadge(s.risk)}</div></div>
+        <div class="detail-item"><div class="l">${t("th.sanct")}</div><div class="v">${sanctBadge(s.sanctions)}</div></div>
+        <div class="detail-item"><div class="l">${t("drawer.riskScore")}</div><div class="v">${s.riskScore ?? "—"}/100</div></div>
+      </div>
+      <div class="card-title" style="font-size:15px;margin-top:8px">${t("drawer.history")}</div>
+      <div class="table-wrap"><table><thead><tr><th>${t("th.date")}</th><th>${t("th.checkedBy")}</th><th>${t("th.lists")}</th><th>${t("th.result")}</th><th>${t("th.notes")}</th></tr></thead><tbody>${hist}</tbody></table></div>
+      <div class="ai-box" style="margin-top:16px">
+        <div class="ai-head"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg>${t("drawer.api")}</div>
+        <div class="ai-body" style="font-family:monospace;font-size:12px;color:var(--color-graphite-50)">
+          GET /api/esg/supplier/${esc(s.id)}/risk<br>GET /api/esg/supplier/${esc(s.id)}/sanctions-status
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="openSupplierModal('${s.id}')">${t("act.edit")}</button>
+      <button class="btn btn-primary" onclick="openCheckModal('${s.id}')">${t("drawer.addCheck")}</button>
+    </div>
+  `, true);
+}
+
+/* ============================================================
+   6. SANCTIONS VIEW
+   ============================================================ */
+function renderChecks() {
+  const q = ($("#chkSearch").value || "").toLowerCase().trim();
+  const fr = $("#fResult").value;
+  const sup = Object.fromEntries(Store.getSuppliers().map(s => [s.id, s]));
+  let list = Store.getChecks().slice().sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  list = list.filter(c => {
+    const s = sup[c.supplierId]; const nm = s ? s.name : "";
+    return (!q || nm.toLowerCase().includes(q) || (c.checkedBy || "").toLowerCase().includes(q)) && (!fr || c.result === fr);
+  });
+  const body = $("#chkBody");
+  if (!list.length) { body.innerHTML = `<tr><td colspan="6" class="empty">${LANG === "lt" ? "Įrašų nėra" : "No records"}</td></tr>`; return; }
+  body.innerHTML = list.map(c => {
+    const s = sup[c.supplierId];
+    return `<tr class="${c.result === "match" ? "row-flag-red" : ""}">
+      <td style="white-space:nowrap">${fmtDateTime(c.timestamp)}</td>
+      <td><div class="t-name">${s ? esc(s.name) : "—"}</div><div class="t-sub" style="font-family:monospace">${esc(c.supplierId)}</div></td>
+      <td>${esc(c.checkedBy)}</td>
+      <td>${(c.lists || []).map(l => `<span class="tag">${esc(l)}</span>`).join("")}</td>
+      <td>${c.result === "match" ? `<span class="badge b-blocked"><span class="d"></span>${t("res.match")}</span>` : `<span class="badge b-clean"><span class="d"></span>${t("res.clean")}</span>`}</td>
+      <td class="t-sub">${esc(c.notes || "")}</td>
+    </tr>`;
+  }).join("");
+}
+
+const SANCTION_LISTS = ["ES", "OFAC", "JT", "UK", LANG === "lt" ? "Nacionalinis" : "National"];
+function openCheckModal(supplierId) {
+  const suppliers = Store.getSuppliers();
+  if (!suppliers.length) { toast(LANG === "lt" ? "Pirma pridėkite tiekėją" : "Add a supplier first", "err"); return; }
+  const supOpts = suppliers.map(s => `<option value="${s.id}" ${s.id === supplierId ? "selected" : ""}>${esc(s.name)}</option>`).join("");
+  const listsChk = ["ES", "OFAC", "JT", "UK"].map(l => `<label style="display:inline-flex;align-items:center;gap:6px;margin-right:14px;font-size:14px"><input type="checkbox" class="chk-list" value="${l}" checked> ${l}</label>`).join("") +
+    `<label style="display:inline-flex;align-items:center;gap:6px;font-size:14px"><input type="checkbox" class="chk-list" value="${LANG === "lt" ? "Nacionalinis" : "National"}"> ${LANG === "lt" ? "Nacionalinis" : "National"}</label>`;
+  openModal(`
+    <div class="modal-head"><div class="modal-title">${t("m.chk.title")}</div><button class="x-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="immutable"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>${t("sanc.immutable")}</div>
+      <div class="form-grid">
+        <div class="field full"><label>${t("m.chk.supplier")} <span class="req">*</span></label><select class="select" id="cf-sup">${supOpts}</select></div>
+        <div class="field full"><label>${t("m.chk.by")} <span class="req">*</span></label><input class="input" id="cf-by" placeholder="${LANG === "lt" ? "Vardas Pavardė" : "Name Surname"}"></div>
+        <div class="field full"><label>${t("m.chk.lists")}</label><div style="padding-top:6px">${listsChk}</div></div>
+        <div class="field full"><label>${t("m.chk.result")} <span class="req">*</span></label>
+          <select class="select" id="cf-result" onchange="toggleMatchWarn()"><option value="clean">${t("res.clean")}</option><option value="match">${t("res.match")}</option></select></div>
+        <div class="field full" id="matchWarn" style="display:none"><div class="ai-disclaimer" style="background:#FCE9EC;border-color:var(--color-error);color:var(--color-error)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>${t("m.chk.warnMatch")}</div></div>
+        <div class="field full"><label>${t("m.chk.notes")}</label><textarea class="input" id="cf-notes" rows="2"></textarea></div>
+      </div>
+
+      <div class="ai-box">
+        <div class="ai-head"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-4 12.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3A7 7 0 0 0 12 2z"/><path d="M9 22h6"/></svg>${t("m.ai.head")}</div>
+        <div class="ai-body">
+          <div class="ai-disclaimer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>${t("m.ai.disc")}</div>
+          <div class="field"><label>${t("m.ai.context")}</label><textarea class="input" id="cf-aictx" rows="2" placeholder="${LANG === "lt" ? "pvz. Gamintojas iš Turkijos, savininkai – ES rezidentai, tiekia transformatorius…" : "e.g. Manufacturer from Turkey, EU-resident owners, supplies transformers…"}"></textarea></div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:8px" id="aiBtn" onclick="runAiAssessment()">${t("m.ai.btn")}</button>
+          <div id="aiResult"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" onclick="closeModal()">${t("m.cancel")}</button><button class="btn btn-primary" onclick="saveCheckForm()">${t("m.chk.save")}</button></div>
+  `, true);
+}
+function toggleMatchWarn() { $("#matchWarn").style.display = $("#cf-result").value === "match" ? "block" : "none"; }
+function saveCheckForm() {
+  const by = $("#cf-by").value.trim(); if (!by) { toast(LANG === "lt" ? "Nurodykite, kas tikrino" : "Specify who checked", "err"); return; }
+  const lists = [...document.querySelectorAll(".chk-list:checked")].map(x => x.value);
+  const result = $("#cf-result").value;
+  const c = { supplierId: $("#cf-sup").value, checkedBy: by, lists, result, notes: $("#cf-notes").value.trim() };
+  Store.addCheck(c); closeModal(); renderAll();
+  if (result === "match") toast(t("toast.blocked"), "err"); else toast(t("toast.checkSaved"));
+}
+
+/* ---- AI assessment via backend proxy (never direct to Claude) ---- */
+async function runAiAssessment() {
+  const btn = $("#aiBtn"), out = $("#aiResult");
+  const supId = $("#cf-sup").value; const sup = Store.getSupplier(supId);
+  const ctx = $("#cf-aictx").value.trim();
+  btn.disabled = true; btn.innerHTML = `<span class="spinner dark"></span> ${t("m.ai.thinking")}`;
+  out.innerHTML = "";
+  try {
+    const res = await fetch(`${API_BASE}/api/esg/sanctions-assessment`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: LANG, supplier: { name: sup?.name, country: sup?.country, category: sup?.category }, context: ctx })
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    renderAiResult(data);
+  } catch (e) {
+    // graceful demo fallback so the MVP is usable without the backend running
+    const demo = demoAssessment(sup, ctx);
+    out.innerHTML = `<div class="note" style="color:var(--color-warning);margin:8px 0">${t("m.ai.fail")}</div>`;
+    renderAiResult(demo, true);
+  } finally {
+    btn.disabled = false; btn.textContent = t("m.ai.btn");
+  }
+}
+function renderAiResult(d, isDemo) {
+  const lvlMap = { low: "b-low", medium: "b-med", high: "b-high" };
+  $("#aiResult").innerHTML = `
+    <div class="ai-result">
+      <h4>${t("m.ai.level")} ${isDemo ? "· (demo)" : ""}</h4>
+      <span class="badge ${lvlMap[d.level] || "b-neutral"}"><span class="d"></span>${t(RISK_LABEL[d.level] || "none")}</span>
+      <h4>${t("m.ai.factors")}</h4><ul>${(d.factors || []).map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+      <h4>${t("m.ai.actions")}</h4><ul>${(d.actions || []).map(f => `<li>${esc(f)}</li>`).join("")}</ul>
+    </div>`;
+}
+function demoAssessment(sup, ctx) {
+  const cr = COUNTRY_RISK[sup?.country] || 2;
+  const level = cr >= 3 ? "high" : cr === 2 ? "medium" : "low";
+  return {
+    level,
+    factors: LANG === "lt"
+      ? [`Šalies rizikos rodiklis: ${sup?.country || "nežinoma"} (lygis ${cr}/3)`, "Reikia patikrinti galutinius naudos gavėjus (UBO)", ctx ? "Įvertintas pateiktas kontekstas" : "Nepateiktas papildomas kontekstas — rekomenduojama papildyti"]
+      : [`Country risk indicator: ${sup?.country || "unknown"} (level ${cr}/3)`, "Ultimate beneficial owners (UBO) need verification", ctx ? "Provided context was considered" : "No additional context provided — recommended to add"],
+    actions: LANG === "lt"
+      ? ["Patikrinti tiekėją oficialiuose ES, OFAC, JT sąrašuose", "Surinkti UBO informaciją ir nuosavybės struktūrą", "Dokumentuoti patikrą šiame žurnale"]
+      : ["Screen the supplier against official EU, OFAC, UN lists", "Collect UBO information and ownership structure", "Document the check in this log"]
+  };
+}
+
+/* ============================================================
+   7. ESRS VIEW
+   ============================================================ */
+function renderEsrs() {
+  const pts = Store.getEsrs();
+  const sup = Store.getSuppliers();
+  // KPIs
+  const avgCov = pts.length ? Math.round(pts.reduce((a, p) => a + (p.coverage || 0), 0) / pts.length) : 0;
+  const codeShare = sup.length ? Math.round(sup.filter(s => s.codeSigned).length / sup.length * 100) : 0;
+  const critShare = 64; // by value (illustrative aggregate)
+  const smeShare = sup.length ? Math.round(sup.filter(s => s.sme).length / sup.length * 100) : 0;
+  $("#esrsKpis").innerHTML = `
+    ${kpi(t("esrs.kpi.total"), avgCov + "%", t("kpi.foot.points") + ": " + pts.length, "")}
+    ${kpi(t("esrs.kpi.code"), codeShare + "%", t("esrs.kpi.foot.suppliers"), "blue")}
+    ${kpi(t("esrs.kpi.crit"), critShare + "%", t("esrs.kpi.foot.value"), "amber")}
+    ${kpi(t("esrs.kpi.sme"), smeShare + "%", t("esrs.kpi.foot.cap"), "")}`;
+  // pillars
+  const byCat = (c) => pts.filter(p => p.esrs && p.esrs.startsWith(c));
+  const pill = (cls, code, name, arr) => {
+    const cov = arr.length ? Math.round(arr.reduce((a, p) => a + (p.coverage || 0), 0) / arr.length) : 0;
+    return `<div class="pillar ${cls}"><div class="code">${code}</div><div class="name">${name}</div><div class="pts">${arr.length}</div><div class="cov">${LANG === "lt" ? "vid. padengimas" : "avg. coverage"}: ${cov}%</div></div>`;
+  };
+  $("#pillars").innerHTML =
+    pill("e", "E1", LANG === "lt" ? "Klimato kaita · Scope 3" : "Climate · Scope 3", byCat("E1")) +
+    pill("s", "S2", LANG === "lt" ? "Vertės grandinės darbuotojai" : "Value-chain workers", byCat("S2")) +
+    pill("g", "G1", LANG === "lt" ? "Verslo etika" : "Business conduct", byCat("G1"));
+  // coverage bars
+  const bar = (label, pct, amber) => `<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px"><span style="font-weight:600">${label}</span><span style="font-weight:800">${pct}%</span></div><div class="prog ${amber ? "amber" : ""}"><i style="width:${pct}%"></i></div></div>`;
+  $("#esrsBars").innerHTML = bar(t("esrs.bar.code"), codeShare) + bar(t("esrs.bar.data"), avgCov) + bar(t("esrs.bar.crit"), critShare, true);
+  // table
+  const body = $("#esrsBody");
+  body.innerHTML = pts.length ? pts.map(p => `
+    <tr>
+      <td class="t-name">${esc(p.name)}</td>
+      <td><span class="tag" style="background:var(--color-green-15);color:var(--color-green)">${esc(p.esrs)}</span></td>
+      <td style="font-weight:700">${esc(p.value)}</td>
+      <td class="t-sub">${esc(p.unit)}</td>
+      <td>${p.source === "module" ? `<span class="badge b-clean"><span class="d"></span>${t("source.module")}: ${esc(p.sourceRef || "")}</span>` : `<span class="badge b-neutral"><span class="d"></span>${t("source.manual")}</span>`}</td>
+      <td class="t-sub">${fmtDate(p.date)}</td>
+      <td style="min-width:130px"><div style="display:flex;align-items:center;gap:8px"><div class="prog" style="flex:1"><i style="width:${p.coverage || 0}%"></i></div><span style="font-size:12px;font-weight:700">${p.coverage || 0}%</span></div></td>
+    </tr>`).join("") : `<tr><td colspan="7" class="empty">${LANG === "lt" ? "Duomenų taškų nėra" : "No data points"}</td></tr>`;
+}
+function addEsrsPoint() {
+  const codes = ["E1-6", "E1-4", "S2-1", "S2-4", "G1-1", "G1-2", "G1-6"];
+  openModal(`
+    <div class="modal-head"><div class="modal-title">${t("esrs.addPoint")}</div><button class="x-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body"><div class="form-grid">
+      <div class="field full"><label>${t("th.dpName")} <span class="req">*</span></label><input class="input" id="ef-name"></div>
+      <div class="field"><label>${t("th.esrsCode")}</label><select class="select" id="ef-code">${codes.map(c => `<option>${c}</option>`).join("")}</select></div>
+      <div class="field"><label>${t("th.value")}</label><input class="input" id="ef-value"></div>
+      <div class="field"><label>${t("th.unit")}</label><input class="input" id="ef-unit" placeholder="tCO₂e / % / ${LANG === "lt" ? "vnt." : "pcs"}"></div>
+      <div class="field"><label>${t("th.coverage")} (%)</label><input class="input" id="ef-cov" type="number" min="0" max="100" value="0"></div>
+    </div></div>
+    <div class="modal-foot"><button class="btn btn-secondary" onclick="closeModal()">${t("m.cancel")}</button><button class="btn btn-primary" onclick="saveEsrsForm()">${t("m.save")}</button></div>
+  `);
+}
+function saveEsrsForm() {
+  const name = $("#ef-name").value.trim(); if (!name) { toast(LANG === "lt" ? "Įveskite pavadinimą" : "Enter a name", "err"); return; }
+  Store.saveEsrs({ name, esrs: $("#ef-code").value, value: $("#ef-value").value.trim(), unit: $("#ef-unit").value.trim(), coverage: Number($("#ef-cov").value) || 0, source: "manual", date: new Date().toISOString() });
+  closeModal(); renderEsrs(); renderDashboard(); toast(t("toast.saved"));
+}
+
+/* ---- CSRD export ---- */
+function buildExportPayload() {
+  const sup = Store.getSuppliers();
+  const pts = Store.getEsrs();
+  return {
+    meta: { module: "PP-ESG", generatedAt: new Date().toISOString(), group: "EPSO-G", framework: "CSRD/ESRS", lang: LANG, supplierCount: sup.length, dataPointCount: pts.length },
+    coverage: {
+      esrsAvgCoverage: pts.length ? Math.round(pts.reduce((a, p) => a + (p.coverage || 0), 0) / pts.length) : 0,
+      codeOfConductSignedPct: sup.length ? Math.round(sup.filter(s => s.codeSigned).length / sup.length * 100) : 0,
+      smeSharePct: sup.length ? Math.round(sup.filter(s => s.sme).length / sup.length * 100) : 0
+    },
+    dataPoints: pts.map(p => ({ esrsCode: p.esrs, name: p.name, value: p.value, unit: p.unit, coverage: p.coverage, source: p.source, sourceRef: p.sourceRef || null, date: p.date })),
+    suppliersSummary: sup.map(s => ({ id: s.id, country: s.country, category: s.category, esgRisk: s.risk, sanctionsStatus: s.sanctions, sme: !!s.sme, vsmeScope: !!s.sme }))
+  };
+}
+function openExportModal() {
+  const payload = buildExportPayload();
+  openModal(`
+    <div class="modal-head"><div class="modal-title">${t("m.exp.title")}</div><button class="x-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <p class="note" style="margin-bottom:12px">${t("m.exp.desc")}</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn btn-primary" onclick="downloadExport('json')">${t("m.exp.json")}</button><button class="btn btn-secondary" onclick="downloadExport('csv')">${t("m.exp.csv")}</button></div>
+      <div class="card-title" style="font-size:14px">${t("m.exp.preview")}</div>
+      <pre style="background:var(--color-graphite);color:#cfe;padding:14px;border-radius:10px;overflow:auto;max-height:300px;font-size:12px">${esc(JSON.stringify(payload, null, 2))}</pre>
+    </div>
+    <div class="modal-foot"><button class="btn btn-secondary" onclick="closeModal()">${t("m.cancel")}</button></div>
+  `, true);
+}
+function downloadExport(fmt) {
+  const payload = buildExportPayload();
+  let blob, fn;
+  if (fmt === "json") { blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" }); fn = "PP-ESG_CSRD_export.json"; }
+  else {
+    const rows = [["esrsCode", "name", "value", "unit", "coverage", "source", "date"]];
+    payload.dataPoints.forEach(p => rows.push([p.esrsCode, p.name, p.value, p.unit, p.coverage, p.source, p.date]));
+    const csv = rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    blob = new Blob(["﻿" + csv], { type: "text/csv" }); fn = "PP-ESG_CSRD_export.csv";
+  }
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = fn; a.click(); URL.revokeObjectURL(a.href);
+  toast(t("toast.exported"));
+}
+
+/* ============================================================
+   8. DASHBOARD + CHARTS
+   ============================================================ */
+function kpi(label, value, foot, cls) { return `<div class="kpi ${cls || ""}"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-foot">${foot}</div></div>`; }
+let charts = {};
+function renderDashboard() {
+  const sup = Store.getSuppliers(), chk = Store.getChecks(), pts = Store.getEsrs();
+  const high = sup.filter(s => s.risk === "high").length;
+  const blocked = sup.filter(s => s.sanctions === "blocked").length;
+  const now = Date.now(), checked90 = sup.filter(s => s.lastCheck && (now - new Date(s.lastCheck)) < 90 * 864e5).length;
+  const matches = chk.filter(c => c.result === "match").length;
+  const avgCov = pts.length ? Math.round(pts.reduce((a, p) => a + (p.coverage || 0), 0) / pts.length) : 0;
+  $("#kpiRow").innerHTML =
+    kpi(t("kpi.suppliers"), sup.length, checked90 + " " + t("kpi.foot.checked"), "") +
+    kpi(t("kpi.highRisk"), high, sup.length ? Math.round(high / sup.length * 100) + "% " + t("kpi.foot.ofTotal") : "—", "amber") +
+    kpi(t("kpi.blocked"), blocked, matches + " " + t("kpi.foot.escalated"), "red") +
+    kpi(t("kpi.coverage"), avgCov + "%", pts.length + " " + t("kpi.foot.points"), "blue");
+
+  // recent checks
+  const supMap = Object.fromEntries(sup.map(s => [s.id, s]));
+  const recent = chk.slice().sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 6);
+  $("#recentChecks").innerHTML = recent.length ? recent.map(c => {
+    const s = supMap[c.supplierId];
+    return `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--color-graphite-15)">
+      <div style="flex:1;min-width:0"><div class="t-name" style="font-size:14px">${s ? esc(s.name) : "—"}</div><div class="t-sub">${fmtDateTime(c.timestamp)} · ${esc(c.checkedBy)}</div></div>
+      ${c.result === "match" ? `<span class="badge b-blocked"><span class="d"></span>${t("res.match")}</span>` : `<span class="badge b-clean"><span class="d"></span>${t("res.clean")}</span>`}</div>`;
+  }).join("") : `<div class="empty">${t("drawer.noHistory")}</div>`;
+
+  drawCharts(sup);
+}
+function drawCharts(sup) {
+  if (typeof Chart === "undefined") return;
+  Object.values(charts).forEach(c => c && c.destroy());
+  const cssv = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  Chart.defaults.font.family = "Nunito Sans, Arial, sans-serif";
+  Chart.defaults.color = cssv("--color-graphite-50");
+
+  const riskCounts = ["low", "medium", "high"].map(l => sup.filter(s => s.risk === l).length);
+  charts.risk = new Chart($("#chartRisk"), {
+    type: "doughnut",
+    data: { labels: [t("risk.low"), t("risk.medium"), t("risk.high")], datasets: [{ data: riskCounts, backgroundColor: [cssv("--color-green"), cssv("--color-warning"), cssv("--color-error")], borderWidth: 0 }] },
+    options: { plugins: { legend: { position: "bottom" } }, cutout: "62%", maintainAspectRatio: false }
+  });
+  const sanctCounts = ["clean", "review", "blocked"].map(l => sup.filter(s => s.sanctions === l).length);
+  charts.sanct = new Chart($("#chartSanct"), {
+    type: "doughnut",
+    data: { labels: [t("sanct.clean"), t("sanct.review"), t("sanct.blocked")], datasets: [{ data: sanctCounts, backgroundColor: [cssv("--color-blue"), cssv("--color-warning"), cssv("--color-error")], borderWidth: 0 }] },
+    options: { plugins: { legend: { position: "bottom" } }, cutout: "62%", maintainAspectRatio: false }
+  });
+  const byCountry = {};
+  sup.forEach(s => { byCountry[s.country] = byCountry[s.country] || { low: 0, medium: 0, high: 0 }; byCountry[s.country][s.risk]++; });
+  const countries = Object.keys(byCountry);
+  charts.country = new Chart($("#chartCountry"), {
+    type: "bar",
+    data: {
+      labels: countries,
+      datasets: [
+        { label: t("risk.low"), data: countries.map(c => byCountry[c].low), backgroundColor: cssv("--color-green"), stack: "x" },
+        { label: t("risk.medium"), data: countries.map(c => byCountry[c].medium), backgroundColor: cssv("--color-warning"), stack: "x" },
+        { label: t("risk.high"), data: countries.map(c => byCountry[c].high), backgroundColor: cssv("--color-error"), stack: "x" }
+      ]
+    },
+    options: { plugins: { legend: { position: "bottom" } }, responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, ticks: { precision: 0 } } } }
+  });
+}
+
+/* ============================================================
+   9. SEED DATA (demo) + BOOT
+   ============================================================ */
+const SEED = {
+  suppliers: [
+    { id: "SUP-DEMO-001", name: "Siemens Energy AG", code: "DE-812345", country: "Vokietija", category: "Transformatoriai", owner: "A. Jurgelaitis", risk: "low", riskScore: 30, sanctions: "clean", sme: false, codeSigned: true, sectorRisk: 2, criticality: 3, lastCheck: "2026-04-12T09:00:00Z" },
+    { id: "SUP-DEMO-002", name: "Hitachi Energy Ltd", code: "CH-447789", country: "Kita ne-ES", category: "Aukštos įtampos įranga", owner: "A. Jurgelaitis", risk: "medium", riskScore: 52, sanctions: "clean", sme: false, codeSigned: true, sectorRisk: 2, criticality: 3, lastCheck: "2026-03-02T09:00:00Z" },
+    { id: "SUP-DEMO-003", name: "Telandina Kabeliai UAB", code: "LT-302145789", country: "Lietuva", category: "Kabeliai ir laidai", owner: "R. Petraitis", risk: "low", riskScore: 22, sanctions: "clean", sme: true, codeSigned: true, sectorRisk: 1, criticality: 2, lastCheck: "2026-05-20T09:00:00Z" },
+    { id: "SUP-DEMO-004", name: "Nexans Baltic", code: "LV-401122", country: "Latvija", category: "Kabeliai ir laidai", owner: "R. Petraitis", risk: "low", riskScore: 28, sanctions: "clean", sme: false, codeSigned: false, sectorRisk: 1, criticality: 2, lastCheck: null },
+    { id: "SUP-DEMO-005", name: "Anatolia Power Components", code: "TR-998877", country: "Turkija", category: "Aukštos įtampos įranga", owner: "A. Jurgelaitis", risk: "high", riskScore: 71, sanctions: "review", sme: false, codeSigned: false, sectorRisk: 3, criticality: 3, lastCheck: "2026-06-01T09:00:00Z" },
+    { id: "SUP-DEMO-006", name: "Eastgrid Components Ltd", code: "CN-556677", country: "Kinija", category: "IT ir telekomunikacijos", owner: "M. Kazlauskaitė", risk: "high", riskScore: 78, sanctions: "blocked", sme: false, codeSigned: false, sectorRisk: 3, criticality: 2, lastCheck: "2026-05-30T09:00:00Z" },
+    { id: "SUP-DEMO-007", name: "Vilniaus Statyba UAB", code: "LT-110022334", country: "Lietuva", category: "Statybos rangovai", owner: "R. Petraitis", risk: "medium", riskScore: 44, sanctions: "clean", sme: true, codeSigned: true, sectorRisk: 2, criticality: 2, lastCheck: "2026-04-28T09:00:00Z" },
+    { id: "SUP-DEMO-008", name: "Nordic Grid Advisory", code: "SE-220044", country: "Švedija", category: "Konsultacijos", owner: "M. Kazlauskaitė", risk: "low", riskScore: 18, sanctions: "clean", sme: true, codeSigned: true, sectorRisk: 1, criticality: 1, lastCheck: "2026-02-15T09:00:00Z" }
+  ],
+  checks: [
+    { id: "CHK-D1", supplierId: "SUP-DEMO-001", timestamp: "2026-04-12T09:00:00Z", checkedBy: "A. Jurgelaitis", lists: ["ES", "OFAC", "JT"], result: "clean", notes: "Metinė planinė patikra." },
+    { id: "CHK-D2", supplierId: "SUP-DEMO-005", timestamp: "2026-06-01T09:00:00Z", checkedBy: "A. Jurgelaitis", lists: ["ES", "OFAC", "JT", "UK"], result: "clean", notes: "Sustiprinta patikra dėl šalies rizikos. Reikia UBO patikslinimo." },
+    { id: "CHK-D3", supplierId: "SUP-DEMO-006", timestamp: "2026-05-30T09:00:00Z", checkedBy: "M. Kazlauskaitė", lists: ["ES", "OFAC", "JT"], result: "match", notes: "Susijusi šalis ES sankcijų sąraše. Eskaluota, pirkimas stabdomas." },
+    { id: "CHK-D4", supplierId: "SUP-DEMO-003", timestamp: "2026-05-20T09:00:00Z", checkedBy: "R. Petraitis", lists: ["ES", "Nacionalinis"], result: "clean", notes: "" },
+    { id: "CHK-D5", supplierId: "SUP-DEMO-007", timestamp: "2026-04-28T09:00:00Z", checkedBy: "R. Petraitis", lists: ["ES", "OFAC"], result: "clean", notes: "" }
+  ],
+  esrs: [
+    { id: "DP-1", name: "Scope 3 emisijos – perkamos prekės ir paslaugos", esrs: "E1-6", value: "42 800", unit: "tCO₂e", coverage: 58, source: "module", sourceRef: "PP-COST-BENEFIT", date: "2026-03-31T00:00:00Z" },
+    { id: "DP-2", name: "Tiekėjų, teikiančių pirminius emisijų duomenis, dalis", esrs: "E1-6", value: "34", unit: "%", coverage: 34, source: "manual", date: "2026-03-31T00:00:00Z" },
+    { id: "DP-3", name: "Vertės grandinės darbuotojų saugos incidentai", esrs: "S2-1", value: "0", unit: LANG === "lt" ? "vnt." : "pcs", coverage: 71, source: "manual", date: "2026-03-31T00:00:00Z" },
+    { id: "DP-4", name: "Tiekėjų su žmogaus teisių vertinimu dalis", esrs: "S2-4", value: "46", unit: "%", coverage: 46, source: "manual", date: "2026-03-31T00:00:00Z" },
+    { id: "DP-5", name: "Tiekėjų, pasirašiusių elgesio kodeksą, dalis", esrs: "G1-1", value: "62", unit: "%", coverage: 62, source: "module", sourceRef: "PP-PROTOCOLS", date: "2026-03-31T00:00:00Z" },
+    { id: "DP-6", name: "Vidutinis mokėjimo terminas tiekėjams", esrs: "G1-6", value: "28", unit: LANG === "lt" ? "d." : "days", coverage: 100, source: "module", sourceRef: "ERP", date: "2026-03-31T00:00:00Z" },
+    { id: "DP-7", name: "Patvirtinti korupcijos / kyšininkavimo atvejai", esrs: "G1-2", value: "0", unit: LANG === "lt" ? "vnt." : "pcs", coverage: 100, source: "manual", date: "2026-03-31T00:00:00Z" }
+  ]
+};
+
+function renderAll() {
+  applyI18n();
+  // refresh dynamic SANCTION list label depends on LANG; handled inline
+  renderSuppliers(); renderChecks(); renderEsrs(); renderDashboard();
+}
+function boot() {
+  Store.seedIfEmpty();
+  applyI18n();
+  renderAll();
+}
+document.addEventListener("DOMContentLoaded", boot);
+
+</script>
+</body>
+</html>
