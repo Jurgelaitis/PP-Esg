@@ -92,8 +92,51 @@ UI papildomai rodo įspėjimą (disclaimer) prie kiekvieno AI bloko.
 
 | Failas | Turinys |
 |---|---|
-| `index.html` | Pilnas, savarankiškas frontend MVP (CSS + JS įdiegti viename faile). Veikia atidarius naršyklėje; demonstraciniai duomenys įkeliami automatiškai. |
+| `index.html` | Pilnas, savarankiškas frontend MVP (CSS + JS įdiegti viename faile). Veikia atidarius naršyklėje; demonstraciniai duomenys įkeliami automatiškai. Viršuje — informacinė (help) skiltis. |
+| `components/gprocure-info-panel.js` | **Standartinis, perkeliamas** informacinės skilties komponentas visiems G-Procure moduliams (žr. žemiau). |
 | `backend-pp-esg-routes.js` | Express maršrutų papildymai su įterpimo instrukcija ir saugumo gairėmis. |
 | `PP-ESG_architektura.md` | Šis dokumentas. |
+
+---
+
+## 7. Dviejų lygių pagalbos sistema (bendras komponentas visiems moduliams)
+
+Modulio viršuje yra savaime suprantama pagalbos sistema su **dviem lygiais**, įgyvendinta kaip vienas standartinis, perkeliamas komponentas (`components/gprocure-info-panel.js`). Į PP-ESG jis įdiegtas **inline viename `index.html`** (jokio antro failo), tačiau identiškas šaltinio failas tinka bet kuriam moduliui. Komponentas pats įsideda savo CSS, naudodamas bendrus G-Procure spalvų/tarpų kintamuosius, todėl atrodo kaip natūrali modulio dalis.
+
+**1 lygis — trumpas sutraukiamas blokas.** „Kas tai ir kaip naudotis": paskirtis, naudojimo žingsniai, pastaba apie duomenis ir taisykles (PSĮ, CSRD/ESRS, AI ribas). Sutraukiamas, pagal nutylėjimą atidarytas; būsena išsaugoma naršyklėje atskirai kiekvienam moduliui. Greta „Suskleisti" yra mygtukas **„Plačiau"**.
+
+**2 lygis — detali instrukcija modaliniame lange.** Paspaudus „Plačiau" atsidaro modalinis langas (tame pačiame faile) su tamsia navy „hero" antrašte ir šviesiu turiniu: išsamus paskirties paaiškinimas su CSRD/CSDDD kontekstu, **vizuali proceso schema** (grafiniai numeruoti žingsniai su jungtimis), **pagrindinių sąvokų** kortelės su pavyzdžiais (ESRS E1/S2/G1, CSDDD, sankcijų sąrašai, VSME) ir **DUK** (išskleidžiami). Elgsena: pagal nutylėjimą uždarytas; uždaromas „X", klavišu **Esc** ir paspaudus už lango ribų; atidarius **užrakinamas fono slinkimas**. Prieinamumas: atidarius dėmesys (focus) perkeliamas į langą, Tab cikluoja tik lango viduje (focus trap), uždarius focus grįžta į „Plačiau" mygtuką.
+
+**Perkėlimas į kitą modulį (keičiamas tik tekstas ir schemos žingsniai):**
+
+```html
+<div id="infoPanelMount"></div>
+<script src="components/gprocure-info-panel.js"></script>
+<script>
+  GProcureInfoPanel.mount({
+    target: "#infoPanelMount",
+    moduleId: "pp-ts",                 // unikalus ID -> atskiras įsiminimas
+    defaultOpen: true,
+    getLang: () => LANG,               // funkcija, grąžinanti 'lt'|'en'
+    content: {
+      lt: {
+        title, purpose, stepsTitle, steps:[...], noteTitle, note,   // 1 lygis
+        moreLabel: "Plačiau",
+        details: {                                                   // 2 lygis (nebūtina)
+          title, intro,
+          processTitle, process:[{title,text}, ...],                 // vizuali schema
+          conceptsTitle, concepts:[{code,term,def,example}, ...],
+          faqTitle, faq:[{q,a}, ...],
+          closeLabel
+        }
+      },
+      en: { ... }
+    }
+  });
+  // perjungus kalbą modulyje:  GProcureInfoPanel.refresh();
+</script>
+```
+
+Jei `details` nėra, mygtukas „Plačiau" tiesiog nerodomas — komponentas veikia kaip vieno lygio. Įsiminimo raktas: `localStorage["gprocure.infoPanel.<moduleId>"]` (`"open"`/`"closed"`).
 
 > **Demonstraciniai duomenys:** pirmą kartą atidarius, įkeliami 8 pavyzdiniai tiekėjai, 5 patikros ir 7 ESRS taškai, kad sąsają galima būtų iškart išbandyti. Norint pradėti nuo tuščio registro — naršyklės konsolėje: `localStorage.clear()` ir perkrauti.
