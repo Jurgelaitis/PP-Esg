@@ -33,7 +33,15 @@ Trys funkcijos sujungtos per **vieną tiesos versiją**: kiekvienas tiekėjas tu
 ## 2. Trys funkcijos
 
 ### Tiekėjų rizikos registras
-Lentelė su filtrais (rizika, sankcijų statusas, šalis, kategorija, paieška), spalviniu kodavimu (žalia/gintaro/raudona) ir tiekėjo kortele (drawer). **Rizikos skaičiuoklė** (`computeRisk`) iš trijų įvesčių — šalies rizikos, sektoriaus rizikos ir kritiškumo tinklui — apskaičiuoja 0–100 įvertį ir siūlomą lygį; atsakingas asmuo gali jį perrašyti. Kritiškumas tinklui sveriamas labiausiai (0.4), nes tai TSO prioritetas.
+Lentelė su filtrais (rizika, sankcijų statusas, šalis, kategorija, paieška, būsena), spalviniu kodavimu (žalia/gintaro/raudona) ir tiekėjo kortele (drawer). **Rizikos skaičiuoklė** (`computeRisk`) iš trijų įvesčių — šalies rizikos, sektoriaus rizikos ir kritiškumo tinklui — apskaičiuoja 0–100 įvertį ir siūlomą lygį; atsakingas asmuo gali jį perrašyti. Kritiškumas tinklui sveriamas labiausiai (0.4), nes tai TSO prioritetas.
+
+#### Automatinis tiekėjų aptikimas iš CVP IS (importas)
+Mygtukas „Importuoti iš CVP IS" atveria vediklį, kuris iš viešų Litgrid sudarytų sutarčių (data.gov.lt, rinkinys 2867) automatiškai aptinka tiekėjus. Filtrai: laikotarpis (12/24/36/60 mėn.), minimali sutarties vertė (reikšmingumas), perkantysis subjektas (numatyta Litgrid), priskiriama kategorija. Rezultatai **dedubliuojami pagal įmonės kodą** ir prieš importą sutikrinami su esamu registru (žymima „Nauja" / „Jau registre"). Backend agreguoja sutarčių skaičių, bendrą vertę ir paskutinės sutarties datą. Jei backend neprieinamas, vediklis rodo demonstracinius duomenis (aiškiai pažymėtus).
+
+> **Svarbu (sąmoningas dizaino sprendimas):** importas yra TIK aptikimas ir registro užpildymas, ne stebėjimas. Importuoti tiekėjai gauna `source: "cvpis"`, `assessment: "pending"`, rizika `unassessed`, sankcijos `review` ir registre žymimi **„Reikia vertinimo"**. ESG rizika ir sankcijos NEatliekamos automatiškai — galutinį vertinimą atlieka atsakingas asmuo (rankiniu būdu įvertinus, „Reikia vertinimo" būsena nuimama).
+
+#### Stebėjimas — periodinis pakartotinis tikrinimas (4 etapas)
+Atskiras nuo importo. Rizika grįsta periodika (`RESCREEN_DAYS`): aukšta rizika kas 90 d., vidutinė kas 180 d., žema kas 365 d. Funkcija `dueForRescreen()` pažymi tiekėjus, kuriems patikra pavėluota (neįtraukia dar neįvertintų „pending" ir „blokuotų"). Apžvalgos skydelyje yra rodikliai („Reikia vertinimo", „Laukia patikros") ir **stebėjimo lentelė** su veiksmų mygtukais (Įvertinti / Patikra). Registre — filtrai „Reikia vertinimo" ir „Laukia pakartotinės patikros". Automatinius priminimus galima įjungti per asistentą (suplanuota užduotis) arba backend cron, kai bus įdiegta DB.
 
 ### Sankcijų patikros istorija
 Audituojamas, **nekeičiamas (write-once)** žurnalas: data, kas tikrino, tikrinti sąrašai (ES/OFAC/JT/UK/nacionaliniai), rezultatas, pastabos. Įrašų negalima trinti ar redaguoti — tik pridėti naujus. **Eskalavimo taisyklė:** rezultatas „atitikmuo rastas" automatiškai pažymi įrašą raudonai ir pakeičia tiekėjo statusą į „blokuotas". **AI mygtukas** „Įvertinti sankcijų riziką" kreipiasi per backend proxy ir grąžina preliminarų vertinimą (rizikos lygis, veiksniai, tolesni veiksmai) — niekada galutinio verdikto.
@@ -59,7 +67,10 @@ Struktūrizuoti pirkimams aktualūs ESRS taškai: **E1** (Scope 3 emisijos iš p
 | Metodas | Kelias | Paskirtis |
 |---|---|---|
 | `POST` | `/api/esg/sanctions-assessment` | AI preliminarus sankcijų rizikos vertinimas per Claude API (raktas tik serveryje) |
+| `GET` | `/api/esg/cvpis-suppliers` | Automatinis tiekėjų aptikimas iš data.gov.lt (rinkinys 2867): jungia sutarčių ir tiekėjų lenteles, filtruoja (from/minValue/buyer), dedubliuoja pagal kodą, agreguoja. Parametrai konfigūruojami `FIELD_MAP` / `DATAGOV`. |
 | `POST` | `/api/esg/csrd-export` | (neprivaloma) serverio pusės CSRD eksporto apdorojimas / audito įrašas |
+
+> **Diegimo pastaba (CVP IS):** data.gov.lt rinkinys 2867 turi dvi lenteles (sutartys ir tiekėjai/šalys), sujungtas per dokumento ID. Sutarčių laukai žinomi (`dok_*`), o tiekėjų lentelės laukai pervadinti — **tiksliuosius pavadinimus patvirtinkite prie rinkinio struktūros** ([data.gov.lt/datasets/2867](https://data.gov.lt/datasets/2867/)) ir, jei reikia, pakoreguokite `FIELD_MAP` bei `DATAGOV` modelių kelius `backend-pp-esg-routes.js`. Normalizatorius bando kelis galimus pavadinimus, todėl veikia lanksčiai.
 
 Backend kodas — faile `backend-pp-esg-routes.js` su įterpimo instrukcija ir saugumo kontroliniu sąrašu (įvesties validacija, rate limiting, CORS allowlist).
 
