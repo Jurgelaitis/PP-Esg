@@ -67,10 +67,10 @@ Struktūrizuoti pirkimams aktualūs ESRS taškai: **E1** (Scope 3 emisijos iš p
 | Metodas | Kelias | Paskirtis |
 |---|---|---|
 | `POST` | `/api/esg/sanctions-assessment` | AI preliminarus sankcijų rizikos vertinimas per Claude API (raktas tik serveryje) |
-| `GET` | `/api/esg/cvpis-suppliers` | Automatinis tiekėjų aptikimas iš data.gov.lt (rinkinys 2867): jungia sutarčių ir tiekėjų lenteles, filtruoja (from/minValue/buyer), dedubliuoja pagal kodą, agreguoja. Parametrai konfigūruojami `FIELD_MAP` / `DATAGOV`. |
+| `GET` | `/api/esg/cvpis-suppliers` | Automatinis tiekėjų aptikimas iš data.gov.lt (`gov/vpt/new`): dviejų žingsnių sujungimas (Atn1 → Atn1ContractList / Atn1ContractedCandidateList), filtravimas (from/minValue/buyer-kodas), dedublikavimas pagal įmonės kodą, agregavimas. Parametrai konfigūruojami `F` / `DATAGOV`. |
 | `POST` | `/api/esg/csrd-export` | (neprivaloma) serverio pusės CSRD eksporto apdorojimas / audito įrašas |
 
-> **Diegimo pastaba (CVP IS):** data.gov.lt rinkinys 2867 turi dvi lenteles (sutartys ir tiekėjai/šalys), sujungtas per dokumento ID. Sutarčių laukai žinomi (`dok_*`), o tiekėjų lentelės laukai pervadinti — **tiksliuosius pavadinimus patvirtinkite prie rinkinio struktūros** ([data.gov.lt/datasets/2867](https://data.gov.lt/datasets/2867/)) ir, jei reikia, pakoreguokite `FIELD_MAP` bei `DATAGOV` modelių kelius `backend-pp-esg-routes.js`. Normalizatorius bando kelis galimus pavadinimus, todėl veikia lanksčiai.
+> **Diegimo pastaba (CVP IS) — patikslinta po testavimo (2026-06):** tikrasis VPT rinkinys yra **`gov/vpt/new`** (ne `org/vpt/cvpp`, kuris davė 404). data.gov.lt veikia **Spinta** varikliu, todėl užklausos rašomos su skliausteliais: `limit(N)`, `sort(_id)`, filtras `field="reikšmė"` (ne `?limit=10`). Duomenys **normalizuoti** per lenteles: `Atn1` (antraštė su perkančiąja organizacija ir data), `Atn1ContractList` (sutartys su vertėmis), `Atn1ContractedCandidateList` (laimėję tiekėjai). Todėl reikia **dviejų žingsnių sujungimo** per `Atn1._id`. Litgrid filtruojamas pagal **juridinio asmens kodą `302564383`** (ne pavadinimą — jis rašomas nevienodai). Tikslius laukų pavadinimus patvirtinkite perskaitę gyvą įrašą (`…/Atn1?limit(3)` ir kt.) ir, jei reikia, pakoreguokite `F` žemėlapį `backend-pp-esg-routes.js`. Normalizatorius bando kelis galimus pavadinimus.
 
 Backend kodas — faile `backend-pp-esg-routes.js` su įterpimo instrukcija ir saugumo kontroliniu sąrašu (įvesties validacija, rate limiting, CORS allowlist).
 

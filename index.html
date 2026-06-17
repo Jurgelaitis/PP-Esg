@@ -923,7 +923,7 @@ const I18N = {
     // importo vediklis
     "imp.title": "Importuoti tiekėjus iš CVP IS", "imp.desc": "Automatiškai aptinkami tiekėjai iš viešų Litgrid sudarytų sutarčių (data.gov.lt). Importuoti tiekėjai pažymimi „reikia vertinimo“ — ESG rizika ir sankcijos neatliekamos automatiškai.",
     "imp.from": "Laikotarpis (nuo)", "imp.from.12": "Paskutiniai 12 mėn.", "imp.from.24": "Paskutiniai 24 mėn.", "imp.from.36": "Paskutiniai 36 mėn.", "imp.from.60": "Paskutiniai 60 mėn.",
-    "imp.minValue": "Min. sutarties vertė (€)", "imp.buyer": "Perkantysis subjektas", "imp.category": "Priskirti kategoriją importuojamiems",
+    "imp.minValue": "Min. sutarties vertė (€)", "imp.buyer": "Perkantysis subjektas (kodas)", "imp.category": "Priskirti kategoriją importuojamiems",
     "imp.search": "Ieškoti CVP IS", "imp.searching": "Ieškoma CVP IS…", "imp.found": "Rasta tiekėjų", "imp.selectAll": "Žymėti visus naujus",
     "imp.col.supplier": "Tiekėjas", "imp.col.code": "Įmonės kodas", "imp.col.contracts": "Sutartys", "imp.col.value": "Bendra vertė", "imp.col.last": "Pask. sutartis", "imp.col.status": "Būsena",
     "imp.new": "Nauja", "imp.exists": "Jau registre", "imp.importSel": "Importuoti pažymėtus", "imp.none": "Nieko nepažymėta",
@@ -991,7 +991,7 @@ const I18N = {
     "src.cvpis": "CVP IS", "flag.pending": "Needs assessment", "flag.due": "Due for re-screening", "flag.assess": "Assess",
     "imp.title": "Import suppliers from CVP IS", "imp.desc": "Suppliers are auto-discovered from public Litgrid contract awards (data.gov.lt). Imported suppliers are flagged “needs assessment” — ESG risk and sanctions are not done automatically.",
     "imp.from": "Period (from)", "imp.from.12": "Last 12 months", "imp.from.24": "Last 24 months", "imp.from.36": "Last 36 months", "imp.from.60": "Last 60 months",
-    "imp.minValue": "Min. contract value (€)", "imp.buyer": "Contracting entity", "imp.category": "Assign category to imported",
+    "imp.minValue": "Min. contract value (€)", "imp.buyer": "Contracting entity (code)", "imp.category": "Assign category to imported",
     "imp.search": "Search CVP IS", "imp.searching": "Searching CVP IS…", "imp.found": "Suppliers found", "imp.selectAll": "Select all new",
     "imp.col.supplier": "Supplier", "imp.col.code": "Company code", "imp.col.contracts": "Contracts", "imp.col.value": "Total value", "imp.col.last": "Last contract", "imp.col.status": "Status",
     "imp.new": "New", "imp.exists": "In register", "imp.importSel": "Import selected", "imp.none": "Nothing selected",
@@ -1215,7 +1215,7 @@ function openImportModal() {
       <div class="form-grid">
         <div class="field"><label>${t("imp.from")}</label><select class="select" id="im-from"><option value="12">${t("imp.from.12")}</option><option value="24">${t("imp.from.24")}</option><option value="36" selected>${t("imp.from.36")}</option><option value="60">${t("imp.from.60")}</option></select></div>
         <div class="field"><label>${t("imp.minValue")}</label><input class="input" id="im-min" type="number" min="0" step="1000" value="10000"></div>
-        <div class="field"><label>${t("imp.buyer")}</label><input class="input" id="im-buyer" value="Litgrid"></div>
+        <div class="field"><label>${t("imp.buyer")}</label><input class="input" id="im-buyer" value="302564383" title="Litgrid AB juridinio asmens kodas"></div>
         <div class="field"><label>${t("imp.category")}</label><select class="select" id="im-cat">${catOpts}</select></div>
       </div>
       <div style="margin-top:14px;display:flex;gap:8px;align-items:center">

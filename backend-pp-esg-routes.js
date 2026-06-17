@@ -181,150 +181,172 @@ router.get('/supplier/:id/sanctions-status', (req, res) => {
 });
 
 /* ============================================================================
- * 4) GET /api/esg/cvpis-suppliers
- *    Automatinis tiekėjų APTIKIMAS iš viešų CVP IS / data.gov.lt sutarčių.
- *    Grąžina dedubliuotą (pagal įmonės kodą) tiekėjų sąrašą su agregatais
- *    (sutarčių sk., bendra vertė, paskutinės sutarties data), kad PP-ESG
- *    galėtų užpildyti registrą. SVARBU: tai TIK aptikimas/užpildymas — rizika
- *    ir sankcijos NEatliekamos (importuoti tiekėjai žymimi „reikia vertinimo").
+ * 4) GET /api/esg/cvpis-suppliers — automatinis tiekėjų APTIKIMAS iš data.gov.lt
+ *    PATAISYTA pagal realią VPT rinkinio struktūrą ir Spinta sintaksę
+ *    (testavimas: Arūnas, 2026-06). Esminiai pataisymai:
+ *      - teisingas kelias:  gov/vpt/new  (ne org/vpt/cvpp -> davė 404);
+ *      - Spinta sintaksė su skliausteliais: limit(N), sort(_id), filtras field="val"
+ *        (NE ?limit=10, kurio Spinta nesupranta);
+ *      - duomenys NORMALIZUOTI per kelias lenteles -> reikia dviejų žingsnių sujungimo:
+ *          Atn1                        – ataskaitos antraštė (perkančioji organizacija, data)
+ *          Atn1ContractList            – sutartys su vertėmis (IX. SUTARTYS)
+ *          Atn1ContractedCandidateList – LAIMĖJĘ tiekėjai (pavadinimas + įmonės kodas)
+ *        Sujungimas: Atn1._id  <-  child.<parentRef>._id
+ *      - Litgrid filtruojamas pagal JURIDINIO ASMENS KODĄ 302564383 (ne pavadinimą,
+ *        nes pavadinimai rašomi nevienodai: "Litgrid AB" / "LITGRID AB" / "AB LITGRID").
+ *    AI NENAUDOJAMAS — tai gryni vieši duomenys; Claude lieka tik ESG/sankcijų vertinimui.
+ *
+ *    PATVIRTINKITE LAUKŲ PAVADINIMUS perskaitę gyvą įrašą (lentelių aprašymai tušti):
+ *      https://get.data.gov.lt/datasets/gov/vpt/new/Atn1?limit(3)
+ *      https://get.data.gov.lt/datasets/gov/vpt/new/Atn1ContractList?limit(3)
+ *      https://get.data.gov.lt/datasets/gov/vpt/new/Atn1ContractedCandidateList?limit(3)
+ *    ir, jei reikia, pakoreguokite žemiau esantį F (laukų kandidatų) žemėlapį.
+ *    Normalizatorius bando kelis galimus pavadinimus, todėl veikia lanksčiai.
  *
  *    Užklausos parametrai:
- *      from     = YYYY-MM-DD  (nuo kurios sutarties sudarymo datos; numatyta -36 mėn.)
+ *      from     = YYYY-MM-DD  (nuo ataskaitos/sutarties datos; numatyta -36 mėn.)
  *      minValue = skaičius    (minimali sutarties vertė EUR; „reikšmingumo" filtras)
- *      buyer    = tekstas      (perkančiojo subjekto kodas/pavadinimas; numatyta Litgrid)
- *      limit    = 1..1000
- *
- *    PASTABA DĖL LAUKŲ: data.gov.lt rinkinys 2867 turi DVI lenteles (sutartys ir
- *    šalys/tiekėjai), sujungtas per dokumento ID. Sutarčių laukų pavadinimai žinomi
- *    (dok_*), o tiekėjų lentelės laukai pervadinti. TIKSLIUS tiekėjų lentelės laukų
- *    pavadinimus PATVIRTINKITE prie rinkinio struktūros (data.gov.lt/datasets/2867)
- *    ir, jei reikia, pakoreguokite FIELD_MAP žemiau. Normalizatorius bando kelis
- *    galimus pavadinimus, kad veiktų lanksčiai.
+ *      buyer    = kodas        (perkančiojo subjekto kodas; numatyta Litgrid 302564383)
+ *      limit    = 1..1000      (grąžinamų tiekėjų riba po agregavimo)
  * ==========================================================================*/
 
-/* ---- Konfigūracija (pritaikykite pagal savo backend ir rinkinio struktūrą) ---- */
 const DATAGOV = {
-  base: process.env.DATAGOV_BASE || 'https://get.data.gov.lt',
-  // Modelių keliai get.data.gov.lt API (PATVIRTINKITE prie rinkinio 2867 struktūros):
-  contractsModel: process.env.DATAGOV_CONTRACTS_MODEL || '/datasets/gov/vpt/pirkimai/Sutartis',
-  partiesModel:   process.env.DATAGOV_PARTIES_MODEL   || '/datasets/gov/vpt/pirkimai/Salis',
-  // Numatytasis perkantysis subjektas (Litgrid AB įmonės kodas):
-  defaultBuyer:   process.env.ESG_DEFAULT_BUYER || '302564383',
+  base: process.env.DATAGOV_BASE || 'https://get.data.gov.lt/datasets/gov/vpt/new',
+  litgridCode: process.env.ESG_LITGRID_CODE || '302564383',
 };
-// Galimi laukų pavadinimai (normalizatorius paima pirmą rastą):
-const FIELD_MAP = {
-  docId:        ['dok_id', 'dokumento_id', 'dok_pirkimo_numeris', 'pirkimo_numeris'],
-  contractName: ['dok_sut_obj_pav', 'objekto_pavadinimas', 'pavadinimas'],
-  value:        ['dok_sut_verte', 'verte', 'sutarties_verte'],
-  awardDate:    ['dok_sudarymo_data', 'sudarymo_data', 'data'],
-  procNumber:   ['dok_pirkimo_numeris', 'pirkimo_numeris'],
-  buyerName:    ['perkancioji_organizacija', 'perkantysis', 'pirkejas', 'uzsakovas'],
-  buyerCode:    ['perkanciosios_kodas', 'pirkejo_kodas', 'uzsakovo_kodas'],
-  // tiekėjų (šalių) lentelė:
-  supplierName: ['tiekejo_pavadinimas', 'tiekejas', 'salies_pavadinimas', 'pavadinimas'],
-  supplierCode: ['tiekejo_kodas', 'imones_kodas', 'salies_kodas', 'kodas'],
+
+// Laukų KANDIDATAI (patvirtinkite perskaitę gyvą įrašą; normalizatorius ima pirmą rastą).
+const F = {
+  // Atn1 (ataskaitos antraštė)
+  authorityCode: ['perkanciosios_organizacijos_kodas', 'perkanciosios_kodas', 'pirkejo_kodas', 'organizacijos_kodas', 'authority_code'],
+  authorityName: ['perkancioji_organizacija', 'perkancioji', 'organizacija', 'pavadinimas'],
+  reportDate:    ['ataskaitos_data', 'paskelbimo_data', 'data', 'sudarymo_data'],
+  // child -> tėvinio Atn1 nuoroda (Spinta: { atn1: { _id } })
+  parentRef:     ['atn1', 'atn_1', 'parent'],
+  parentRefFlat: ['atn1._id', 'parent_id', 'atn1_id'],
+  // Atn1ContractList (sutartys su vertėmis)
+  contractValue: ['sutarties_verte', 'verte', 'kaina', 'value'],
+  contractDate:  ['sutarties_data', 'sudarymo_data', 'data'],
+  contractNo:    ['sutarties_nr', 'sutarties_numeris', 'numeris', 'eil_nr'],
+  // Atn1ContractedCandidateList (laimėję tiekėjai)
+  supplierName:  ['tiekejo_pavadinimas', 'pavadinimas', 'tiekejas', 'candidate_name'],
+  supplierCode:  ['tiekejo_kodas', 'imones_kodas', 'kodas', 'candidate_code'],
   supplierCountry: ['salis', 'valstybe', 'tiekejo_salis'],
-  role:         ['vaidmuo', 'salies_tipas', 'tipas'], // norim role == "tiekėjas"/"laimėtojas"
+  candContractNo: ['sutarties_nr', 'sutarties_numeris', 'numeris', 'eil_nr'],
 };
-function pick(obj, names, fallback) {
-  for (const n of names) { if (obj && obj[n] != null && obj[n] !== '') return obj[n]; }
-  return fallback;
-}
+function pick(o, names, fb) { for (const n of names) { if (o && o[n] != null && o[n] !== '') return o[n]; } return fb; }
+function parseValue(v) { return parseFloat(String(v == null ? '0' : v).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.')) || 0; }
 
 const cvpisLimiter = rateLimit
   ? rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false })
   : (req, res, next) => next();
 
-// Paprastas in-memory cache (TTL), kad nedubliuotume užklausų į data.gov.lt
-const _cvpisCache = new Map(); // key -> { at, data }
-const CVPIS_TTL_MS = 10 * 60 * 1000;
+const _cvpisCache = new Map();
+const CVPIS_TTL_MS = 30 * 60 * 1000;
 
-async function fetchDatagov(modelPath, query) {
-  const url = new URL(DATAGOV.base + modelPath);
-  Object.entries(query || {}).forEach(([k, v]) => { if (v != null) url.searchParams.set(k, v); });
-  url.searchParams.set('format', 'json');
-  const r = await fetch(url.toString(), { headers: { accept: 'application/json' } });
-  if (!r.ok) throw new Error('data.gov.lt HTTP ' + r.status);
+/* ---- Spinta užklausos pagalbininkai (skliaustelių sintaksė!) ---- */
+function spintaUrl(model, conditions, extra) {
+  const parts = ['format(json)'].concat(conditions || [], extra || []);
+  return DATAGOV.base + '/' + model + '?' + parts.join('&');
+}
+async function spinta(model, conditions, extra) {
+  const r = await fetch(spintaUrl(model, conditions, extra), { headers: { accept: 'application/json' } });
+  if (!r.ok) throw new Error(model + ' HTTP ' + r.status);
   const j = await r.json();
-  // get.data.gov.lt grąžina { _data: [...] } arba tiesiog masyvą — palaikom abu
   return Array.isArray(j) ? j : (j._data || j.data || []);
+}
+// Puslapiavimas per _id kursorių (Spinta neturi offset; naudojam sort(_id)+_id>"...")
+async function spintaAll(model, conditions, cap) {
+  cap = cap || 5000; const out = []; let last = null; const page = 1000;
+  while (out.length < cap) {
+    const cond = (conditions || []).slice(); if (last) cond.push('_id>"' + last + '"');
+    let rows;
+    try { rows = await spinta(model, cond, ['sort(_id)', 'limit(' + page + ')']); }
+    catch (e) { if (out.length) break; throw e; }
+    if (!rows.length) break;
+    out.push(...rows); last = rows[rows.length - 1]._id;
+    if (rows.length < page) break;
+  }
+  return out;
+}
+function childParentId(row) {
+  const ref = pick(row, F.parentRef);
+  if (ref && (ref._id || ref.id)) return ref._id || ref.id;
+  return pick(row, F.parentRefFlat);
 }
 
 router.get('/cvpis-suppliers', cvpisLimiter, async (req, res) => {
-  // ---- įvesties validacija ----
   const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 300, 1), 1000);
   const minValue = req.query.minValue != null ? Math.max(parseFloat(req.query.minValue) || 0, 0) : 0;
-  const buyer = clampStr(req.query.buyer, 120) || DATAGOV.defaultBuyer;
   let from = clampStr(req.query.from, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) {
-    const d = new Date(); d.setMonth(d.getMonth() - 36); from = d.toISOString().slice(0, 10);
-  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) { const d = new Date(); d.setMonth(d.getMonth() - 36); from = d.toISOString().slice(0, 10); }
+  // Litgrid filtruojam pagal KODĄ (jei atėjo pavadinimas „Litgrid", naudojam numatytą kodą):
+  const raw = clampStr(req.query.buyer, 60);
+  const authCode = /^\d{6,12}$/.test(raw) ? raw : DATAGOV.litgridCode;
 
-  const cacheKey = JSON.stringify({ from, minValue, buyer, limit });
+  const cacheKey = JSON.stringify({ from, minValue, authCode, limit });
   const cached = _cvpisCache.get(cacheKey);
   if (cached && (Date.now() - cached.at) < CVPIS_TTL_MS) return res.json(cached.data);
 
   try {
-    // 1) Gauti sutartis pagal perkantįjį ir datą (filtravimas serverio pusėje, kiek leidžia API).
-    //    Pastaba: get.data.gov.lt palaiko filtrus per query (pvz. ?dok_sudarymo_data>='from').
-    //    Čia darom paprastą gavimą ir filtruojam JS pusėje dėl laukų pavadinimų lankstumo.
-    const contracts = await fetchDatagov(DATAGOV.contractsModel, { limit });
-    const parties = await fetchDatagov(DATAGOV.partiesModel, { limit: limit * 3 });
+    // ŽINGSNIS 1: Atn1 antraštės pagal perkančiosios kodą (serverio pusėje, jei laukas teisingas;
+    // jei nepavyksta — paimam ir filtruojam JS pusėje pagal kandidatų laukus).
+    let reports;
+    try { reports = await spintaAll('Atn1', [F.authorityCode[0] + '="' + authCode + '"'], 4000); }
+    catch (e) { reports = await spintaAll('Atn1', [], 6000); }
 
-    // 2) Indeksuoti šalis pagal dokumento ID
-    const partiesByDoc = new Map();
-    for (const p of parties) {
-      const docId = pick(p, FIELD_MAP.docId);
-      if (docId == null) continue;
-      if (!partiesByDoc.has(docId)) partiesByDoc.set(docId, []);
-      partiesByDoc.get(docId).push(p);
+    const reportDate = new Map();   // reportId -> data
+    const reportIds = new Set();
+    for (const a of reports) {
+      const code = String(pick(a, F.authorityCode, '') || '');
+      const date = String(pick(a, F.reportDate, '') || '').slice(0, 10);
+      if (authCode && code && code !== authCode) continue;     // JS atsarginis filtras pagal kodą
+      if (from && date && date < from) continue;               // datos filtras
+      reportIds.add(a._id); reportDate.set(a._id, date);
+    }
+    if (!reportIds.size) {
+      const empty = { meta: cvpisMeta(from, minValue, authCode, 0), suppliers: [] };
+      _cvpisCache.set(cacheKey, { at: Date.now(), data: empty }); return res.json(empty);
     }
 
-    // 3) Sujungti, filtruoti, agreguoti pagal įmonės kodą
-    const bySupplier = new Map();
+    // ŽINGSNIS 2: sutartys (vertės) ir laimėtojai (tiekėjai), priklausantys tiems Atn1.
+    const contracts = await spintaAll('Atn1ContractList', [], 12000);
+    const winners   = await spintaAll('Atn1ContractedCandidateList', [], 12000);
+
+    // Vertės pagal (reportId | sutarties_nr)
+    const valueByKey = new Map();
     for (const c of contracts) {
-      const docId = pick(c, FIELD_MAP.docId);
-      const value = parseFloat(String(pick(c, FIELD_MAP.value, '0')).replace(/[^\d.,-]/g, '').replace(',', '.')) || 0;
-      const award = String(pick(c, FIELD_MAP.awardDate, '') || '').slice(0, 10);
-      const bName = String(pick(c, FIELD_MAP.buyerName, '') || '');
-      const bCode = String(pick(c, FIELD_MAP.buyerCode, '') || '');
-
-      // filtrai
-      if (minValue && value < minValue) continue;
-      if (award && from && award < from) continue;
-      if (buyer && !(bName.toLowerCase().includes(buyer.toLowerCase()) || bCode === buyer)) continue;
-
-      const docParties = partiesByDoc.get(docId) || [];
-      const suppliers = docParties.filter(p => {
-        const role = String(pick(p, FIELD_MAP.role, '') || '').toLowerCase();
-        // jei role laukas yra — imam tik tiekėjus/laimėtojus; jei nėra — imam visus
-        return !role || /tiek|laim|winner|suppl/.test(role);
-      });
-      for (const p of suppliers) {
-        const code = String(pick(p, FIELD_MAP.supplierCode, '') || '').trim();
-        const name = String(pick(p, FIELD_MAP.supplierName, '') || '').trim();
-        if (!name && !code) continue;
-        const key = code || name.toLowerCase(); // dedupe pagal kodą (atsarginis — pagal pavadinimą)
-        const country = String(pick(p, FIELD_MAP.supplierCountry, 'Lietuva') || 'Lietuva');
-        let agg = bySupplier.get(key);
-        if (!agg) { agg = { name, code, country, contractCount: 0, totalValue: 0, lastAward: '', procNumbers: [] }; bySupplier.set(key, agg); }
-        agg.contractCount += 1;
-        agg.totalValue += value;
-        if (award > agg.lastAward) agg.lastAward = award;
-        const proc = String(pick(c, FIELD_MAP.procNumber, '') || '');
-        if (proc && agg.procNumbers.length < 5 && !agg.procNumbers.includes(proc)) agg.procNumbers.push(proc);
-        if (!agg.name && name) agg.name = name;
-      }
+      const rid = childParentId(c); if (!reportIds.has(rid)) continue;
+      const no = String(pick(c, F.contractNo, '') || '');
+      const v = parseValue(pick(c, F.contractValue, '0'));
+      valueByKey.set(rid + '|' + no, (valueByKey.get(rid + '|' + no) || 0) + v);
     }
 
-    const suppliers = Array.from(bySupplier.values())
-      .map(s => ({ ...s, totalValue: Math.round(s.totalValue) }))
-      .sort((a, b) => b.totalValue - a.totalValue);
+    // Agregavimas pagal tiekėjo įmonės kodą (dedubliavimas)
+    const bySupplier = new Map();
+    for (const w of winners) {
+      const rid = childParentId(w); if (!reportIds.has(rid)) continue;
+      const name = String(pick(w, F.supplierName, '') || '').trim();
+      const code = String(pick(w, F.supplierCode, '') || '').trim();
+      if (!name && !code) continue;
+      const no = String(pick(w, F.candContractNo, '') || '');
+      const val = valueByKey.get(rid + '|' + no) || 0;
+      const award = reportDate.get(rid) || '';
+      const key = code || name.toLowerCase();
+      let agg = bySupplier.get(key);
+      if (!agg) { agg = { name, code, country: String(pick(w, F.supplierCountry, 'Lietuva') || 'Lietuva'), contractCount: 0, totalValue: 0, lastAward: '' }; bySupplier.set(key, agg); }
+      agg.contractCount += 1; agg.totalValue += val;
+      if (award > agg.lastAward) agg.lastAward = award;
+      if (!agg.name && name) agg.name = name;
+    }
 
-    const payload = {
-      meta: { source: 'CVP IS / data.gov.lt', dataset: '2867', from, minValue, buyer, fetchedAt: new Date().toISOString(), count: suppliers.length },
-      suppliers,
-    };
+    // „Reikšmingumo" filtras pagal bendrą vertę (taikomas tik kai vertė žinoma > 0)
+    let suppliers = Array.from(bySupplier.values()).map(s => ({ ...s, totalValue: Math.round(s.totalValue) }));
+    if (minValue) suppliers = suppliers.filter(s => !s.totalValue || s.totalValue >= minValue);
+    suppliers.sort((a, b) => b.totalValue - a.totalValue);
+    suppliers = suppliers.slice(0, limit);
+
+    const payload = { meta: cvpisMeta(from, minValue, authCode, suppliers.length), suppliers };
     _cvpisCache.set(cacheKey, { at: Date.now(), data: payload });
     return res.json(payload);
   } catch (err) {
@@ -332,7 +354,9 @@ router.get('/cvpis-suppliers', cvpisLimiter, async (req, res) => {
     return res.status(502).json({ error: 'Nepavyko gauti CVP IS duomenų / Could not fetch CVP IS data.', detail: err.message });
   }
 });
-
+function cvpisMeta(from, minValue, authCode, count) {
+  return { source: 'CVP IS / data.gov.lt', dataset: 'gov/vpt/new', authorityCode: authCode, from, minValue, fetchedAt: new Date().toISOString(), count };
+}
 module.exports = router;
 
 /* ============================================================================
