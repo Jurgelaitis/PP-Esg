@@ -182,32 +182,15 @@ router.get('/supplier/:id/sanctions-status', (req, res) => {
 
 /* ============================================================================
  * 4) GET /api/esg/cvpis-suppliers — automatinis tiekėjų APTIKIMAS iš data.gov.lt
- *    PATAISYTA pagal realią VPT rinkinio struktūrą ir Spinta sintaksę
- *    (testavimas: Arūnas, 2026-06). Esminiai pataisymai:
- *      - teisingas kelias:  gov/vpt/new  (ne org/vpt/cvpp -> davė 404);
- *      - Spinta sintaksė su skliausteliais: limit(N), sort(_id), filtras field="val"
- *        (NE ?limit=10, kurio Spinta nesupranta);
- *      - duomenys NORMALIZUOTI per kelias lenteles -> reikia dviejų žingsnių sujungimo:
- *          Atn1                        – ataskaitos antraštė (perkančioji organizacija, data)
- *          Atn1ContractList            – sutartys su vertėmis (IX. SUTARTYS)
- *          Atn1ContractedCandidateList – LAIMĖJĘ tiekėjai (pavadinimas + įmonės kodas)
- *        Sujungimas: Atn1._id  <-  child.<parentRef>._id
- *      - Litgrid filtruojamas pagal JURIDINIO ASMENS KODĄ 302564383 (ne pavadinimą,
- *        nes pavadinimai rašomi nevienodai: "Litgrid AB" / "LITGRID AB" / "AB LITGRID").
- *    AI NENAUDOJAMAS — tai gryni vieši duomenys; Claude lieka tik ESG/sankcijų vertinimui.
- *
- *    PATVIRTINKITE LAUKŲ PAVADINIMUS perskaitę gyvą įrašą (lentelių aprašymai tušti):
- *      https://get.data.gov.lt/datasets/gov/vpt/new/Atn1?limit(3)
- *      https://get.data.gov.lt/datasets/gov/vpt/new/Atn1ContractList?limit(3)
- *      https://get.data.gov.lt/datasets/gov/vpt/new/Atn1ContractedCandidateList?limit(3)
- *    ir, jei reikia, pakoreguokite žemiau esantį F (laukų kandidatų) žemėlapį.
- *    Normalizatorius bando kelis galimus pavadinimus, todėl veikia lanksčiai.
- *
- *    Užklausos parametrai:
- *      from     = YYYY-MM-DD  (nuo ataskaitos/sutarties datos; numatyta -36 mėn.)
- *      minValue = skaičius    (minimali sutarties vertė EUR; „reikšmingumo" filtras)
- *      buyer    = kodas        (perkančiojo subjekto kodas; numatyta Litgrid 302564383)
- *      limit    = 1..1000      (grąžinamų tiekėjų riba po agregavimo)
+ *    TIKRI LAUKAI patvirtinti iš gyvų duomenų (Arūnas, 2026-06):
+ *      Rinkinys:  gov/vpt/new  ("Pirkimų, vykdytų po 2017-07-01 duomenys")
+ *      Atn1 (ataskaitos antraštė):
+ *         _id, authority_org_nr (perkančiosios kodas), published_date, title ...
+ *      Atn1ContractList (sutartys — turi ir tiekėją, ir vertę!):
+ *         atn1._id (nuoroda į ataskaitą), selected_tenderer ("kodas;pavadinimas"),
+ *         total_value_of_part, conclusion_date, expiry_date, part_number ...
+ *    Spinta sintaksė suderinta su jūsų /api/price: _limit=N, _sort=, select(), filtras laukas="val".
+ *    Litgrid filtruojamas pagal authority_org_nr = 302564383. AI nenaudojamas.
  * ==========================================================================*/
 
 const DATAGOV = {
@@ -215,27 +198,21 @@ const DATAGOV = {
   litgridCode: process.env.ESG_LITGRID_CODE || '302564383',
 };
 
-// Laukų KANDIDATAI (patvirtinkite perskaitę gyvą įrašą; normalizatorius ima pirmą rastą).
-const F = {
-  // Atn1 (ataskaitos antraštė)
-  authorityCode: ['perkanciosios_organizacijos_kodas', 'perkanciosios_kodas', 'pirkejo_kodas', 'organizacijos_kodas', 'authority_code'],
-  authorityName: ['perkancioji_organizacija', 'perkancioji', 'organizacija', 'pavadinimas'],
-  reportDate:    ['ataskaitos_data', 'paskelbimo_data', 'data', 'sudarymo_data'],
-  // child -> tėvinio Atn1 nuoroda (Spinta: { atn1: { _id } })
-  parentRef:     ['atn1', 'atn_1', 'parent'],
-  parentRefFlat: ['atn1._id', 'parent_id', 'atn1_id'],
-  // Atn1ContractList (sutartys su vertėmis)
-  contractValue: ['sutarties_verte', 'verte', 'kaina', 'value'],
-  contractDate:  ['sutarties_data', 'sudarymo_data', 'data'],
-  contractNo:    ['sutarties_nr', 'sutarties_numeris', 'numeris', 'eil_nr'],
-  // Atn1ContractedCandidateList (laimėję tiekėjai)
-  supplierName:  ['tiekejo_pavadinimas', 'pavadinimas', 'tiekejas', 'candidate_name'],
-  supplierCode:  ['tiekejo_kodas', 'imones_kodas', 'kodas', 'candidate_code'],
-  supplierCountry: ['salis', 'valstybe', 'tiekejo_salis'],
-  candContractNo: ['sutarties_nr', 'sutarties_numeris', 'numeris', 'eil_nr'],
-};
-function pick(o, names, fb) { for (const n of names) { if (o && o[n] != null && o[n] !== '') return o[n]; } return fb; }
-function parseValue(v) { return parseFloat(String(v == null ? '0' : v).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.')) || 0; }
+function parseValue(v) {
+  return parseFloat(String(v == null ? '0' : v).replace(/[^\d.,-]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.')) || 0;
+}
+// "302912288;ERGO Insurance SE Lietuvos filialas" -> { code, name }
+function parseTenderer(s) {
+  s = String(s == null ? '' : s).trim();
+  if (!s) return null;
+  const i = s.indexOf(';');
+  if (i >= 0) return { code: s.slice(0, i).trim(), name: s.slice(i + 1).trim() };
+  return /^\d{6,}$/.test(s) ? { code: s, name: '' } : { code: '', name: s };
+}
+function childParentId(row) {
+  if (row && row.atn1 && (row.atn1._id || row.atn1.id)) return row.atn1._id || row.atn1.id;
+  return row ? (row['atn1._id'] || null) : null;
+}
 
 const cvpisLimiter = rateLimit
   ? rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false })
@@ -244,35 +221,21 @@ const cvpisLimiter = rateLimit
 const _cvpisCache = new Map();
 const CVPIS_TTL_MS = 30 * 60 * 1000;
 
-/* ---- Spinta užklausos pagalbininkai (skliaustelių sintaksė!) ---- */
-function spintaUrl(model, conditions, extra) {
-  const parts = ['format(json)'].concat(conditions || [], extra || []);
-  return DATAGOV.base + '/' + model + '?' + parts.join('&');
+/* Spinta užklausa (sintaksė kaip /api/price): _limit, _sort, select(), filtras laukas="val". */
+function spintaUrl(model, opts) {
+  opts = opts || {};
+  const qs = [];
+  (opts.filters || []).forEach(f => qs.push(f));
+  if (opts.select && opts.select.length) qs.push('select(' + opts.select.join(',') + ')');
+  if (opts.sort) qs.push('_sort=' + opts.sort);
+  qs.push('_limit=' + (opts.limit || 5000));
+  return DATAGOV.base + '/' + model + '?' + qs.join('&');
 }
-async function spinta(model, conditions, extra) {
-  const r = await fetch(spintaUrl(model, conditions, extra), { headers: { accept: 'application/json' } });
+async function spinta(model, opts) {
+  const r = await fetch(spintaUrl(model, opts), { headers: { accept: 'application/json' } });
   if (!r.ok) throw new Error(model + ' HTTP ' + r.status);
   const j = await r.json();
   return Array.isArray(j) ? j : (j._data || j.data || []);
-}
-// Puslapiavimas per _id kursorių (Spinta neturi offset; naudojam sort(_id)+_id>"...")
-async function spintaAll(model, conditions, cap) {
-  cap = cap || 5000; const out = []; let last = null; const page = 1000;
-  while (out.length < cap) {
-    const cond = (conditions || []).slice(); if (last) cond.push('_id>"' + last + '"');
-    let rows;
-    try { rows = await spinta(model, cond, ['sort(_id)', 'limit(' + page + ')']); }
-    catch (e) { if (out.length) break; throw e; }
-    if (!rows.length) break;
-    out.push(...rows); last = rows[rows.length - 1]._id;
-    if (rows.length < page) break;
-  }
-  return out;
-}
-function childParentId(row) {
-  const ref = pick(row, F.parentRef);
-  if (ref && (ref._id || ref.id)) return ref._id || ref.id;
-  return pick(row, F.parentRefFlat);
 }
 
 router.get('/cvpis-suppliers', cvpisLimiter, async (req, res) => {
@@ -280,7 +243,6 @@ router.get('/cvpis-suppliers', cvpisLimiter, async (req, res) => {
   const minValue = req.query.minValue != null ? Math.max(parseFloat(req.query.minValue) || 0, 0) : 0;
   let from = clampStr(req.query.from, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) { const d = new Date(); d.setMonth(d.getMonth() - 36); from = d.toISOString().slice(0, 10); }
-  // Litgrid filtruojam pagal KODĄ (jei atėjo pavadinimas „Litgrid", naudojam numatytą kodą):
   const raw = clampStr(req.query.buyer, 60);
   const authCode = /^\d{6,12}$/.test(raw) ? raw : DATAGOV.litgridCode;
 
@@ -289,58 +251,51 @@ router.get('/cvpis-suppliers', cvpisLimiter, async (req, res) => {
   if (cached && (Date.now() - cached.at) < CVPIS_TTL_MS) return res.json(cached.data);
 
   try {
-    // ŽINGSNIS 1: Atn1 antraštės pagal perkančiosios kodą (serverio pusėje, jei laukas teisingas;
-    // jei nepavyksta — paimam ir filtruojam JS pusėje pagal kandidatų laukus).
-    let reports;
-    try { reports = await spintaAll('Atn1', [F.authorityCode[0] + '="' + authCode + '"'], 4000); }
-    catch (e) { reports = await spintaAll('Atn1', [], 6000); }
-
-    const reportDate = new Map();   // reportId -> data
-    const reportIds = new Set();
-    for (const a of reports) {
-      const code = String(pick(a, F.authorityCode, '') || '');
-      const date = String(pick(a, F.reportDate, '') || '').slice(0, 10);
-      if (authCode && code && code !== authCode) continue;     // JS atsarginis filtras pagal kodą
-      if (from && date && date < from) continue;               // datos filtras
-      reportIds.add(a._id); reportDate.set(a._id, date);
-    }
-    if (!reportIds.size) {
-      const empty = { meta: cvpisMeta(from, minValue, authCode, 0), suppliers: [] };
-      _cvpisCache.set(cacheKey, { at: Date.now(), data: empty }); return res.json(empty);
+    // PIRMINIS kelias: vienas kvietimas su filtru per nuorodą į tėvinę Atn1 lentelę.
+    // SVARBU: rūšiuojam pagal sutarties datą MAŽĖJANČIA tvarka, kad 5000 įrašų riba
+    // paimtų NAUJAUSIAS sutartis (kitaip trumpi laikotarpiai liktų tušti).
+    const primaryFilters = ['atn1.authority_org_nr="' + authCode + '"'];
+    let rows = null;
+    try {
+      rows = await spinta('Atn1ContractList', { filters: primaryFilters, sort: '-conclusion_date', limit: 5000 });
+    } catch (e1) {
+      // jei rūšiavimas pagal šį lauką nepalaikomas — bandom be rūšiavimo
+      try { rows = await spinta('Atn1ContractList', { filters: primaryFilters, limit: 5000 }); }
+      catch (e2) { rows = null; }
     }
 
-    // ŽINGSNIS 2: sutartys (vertės) ir laimėtojai (tiekėjai), priklausantys tiems Atn1.
-    const contracts = await spintaAll('Atn1ContractList', [], 12000);
-    const winners   = await spintaAll('Atn1ContractedCandidateList', [], 12000);
-
-    // Vertės pagal (reportId | sutarties_nr)
-    const valueByKey = new Map();
-    for (const c of contracts) {
-      const rid = childParentId(c); if (!reportIds.has(rid)) continue;
-      const no = String(pick(c, F.contractNo, '') || '');
-      const v = parseValue(pick(c, F.contractValue, '0'));
-      valueByKey.set(rid + '|' + no, (valueByKey.get(rid + '|' + no) || 0) + v);
+    // ATSARGINIS kelias: dviejų žingsnių sujungimas (jei filtras per nuorodą nepalaikomas).
+    if (!rows || !rows.length) {
+      let reports;
+      try { reports = await spinta('Atn1', { filters: ['authority_org_nr="' + authCode + '"'], sort: '-published_date', limit: 5000 }); }
+      catch (e) {
+        try { reports = await spinta('Atn1', { filters: ['authority_org_nr="' + authCode + '"'], limit: 5000 }); }
+        catch (e2) { reports = await spinta('Atn1', { limit: 6000 }); }
+      }
+      const ids = new Set(reports.filter(a => String(a.authority_org_nr || '') === authCode).map(a => a._id));
+      let all;
+      try { all = await spinta('Atn1ContractList', { sort: '-conclusion_date', limit: 5000 }); }
+      catch (e) { all = await spinta('Atn1ContractList', { limit: 5000 }); }
+      rows = all.filter(c => ids.has(childParentId(c)));
     }
 
     // Agregavimas pagal tiekėjo įmonės kodą (dedubliavimas)
     const bySupplier = new Map();
-    for (const w of winners) {
-      const rid = childParentId(w); if (!reportIds.has(rid)) continue;
-      const name = String(pick(w, F.supplierName, '') || '').trim();
-      const code = String(pick(w, F.supplierCode, '') || '').trim();
-      if (!name && !code) continue;
-      const no = String(pick(w, F.candContractNo, '') || '');
-      const val = valueByKey.get(rid + '|' + no) || 0;
-      const award = reportDate.get(rid) || '';
-      const key = code || name.toLowerCase();
+    for (const c of rows) {
+      const t = parseTenderer(c.selected_tenderer);
+      if (!t || (!t.code && !t.name)) continue;
+      const date = String(c.conclusion_date || '').slice(0, 10);
+      if (from && date && date < from) continue;            // datos filtras pagal sutarties sudarymą
+      const val = parseValue(c.total_value_of_part);
+      const key = t.code || t.name.toLowerCase();
       let agg = bySupplier.get(key);
-      if (!agg) { agg = { name, code, country: String(pick(w, F.supplierCountry, 'Lietuva') || 'Lietuva'), contractCount: 0, totalValue: 0, lastAward: '' }; bySupplier.set(key, agg); }
-      agg.contractCount += 1; agg.totalValue += val;
-      if (award > agg.lastAward) agg.lastAward = award;
-      if (!agg.name && name) agg.name = name;
+      if (!agg) { agg = { name: t.name || t.code, code: t.code, country: 'Lietuva', contractCount: 0, totalValue: 0, lastAward: '' }; bySupplier.set(key, agg); }
+      agg.contractCount += 1;
+      agg.totalValue += val;
+      if (date > agg.lastAward) agg.lastAward = date;
+      if ((!agg.name || agg.name === agg.code) && t.name) agg.name = t.name;
     }
 
-    // „Reikšmingumo" filtras pagal bendrą vertę (taikomas tik kai vertė žinoma > 0)
     let suppliers = Array.from(bySupplier.values()).map(s => ({ ...s, totalValue: Math.round(s.totalValue) }));
     if (minValue) suppliers = suppliers.filter(s => !s.totalValue || s.totalValue >= minValue);
     suppliers.sort((a, b) => b.totalValue - a.totalValue);
